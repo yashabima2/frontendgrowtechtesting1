@@ -13,3 +13,9 @@
 //   "api-games",
 //   "midtrans",
 // ];
+// lib/permissions.js
+export const PERMISSIONS = {
+  ADMIN: "admin",
+  USER: "user",
+  SUPERADMIN: "superadmin",
+}
