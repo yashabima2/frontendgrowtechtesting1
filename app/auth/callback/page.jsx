@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect } from "react"
+import { Suspense, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Cookies from "js-cookie"
-import { useAuth } from "../../../app/hooks/useAuth"
+import { useAuth } from "@/app/hooks/useAuth"
 
-export default function OAuthCallbackPage() {
+function OAuthCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { setUser } = useAuth()
@@ -14,21 +14,17 @@ export default function OAuthCallbackPage() {
     const token = searchParams.get("token")
     if (!token) return
 
-    // ✅ simpan token
     Cookies.set("token", token, {
       path: "/",
       sameSite: "lax",
     })
 
-    // ✅ ambil profile user
     const fetchMe = async () => {
       try {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           }
         )
 
@@ -39,7 +35,6 @@ export default function OAuthCallbackPage() {
 
         setUser(user)
 
-        // ✅ redirect sesuai role
         if (user.role === "admin") {
           router.replace("/admin/dashboard")
         } else {
@@ -59,5 +54,13 @@ export default function OAuthCallbackPage() {
     <div className="min-h-screen flex items-center justify-center text-white">
       Logging you in...
     </div>
+  )
+}
+
+export default function OAuthCallbackPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-white">Loading...</div>}>
+      <OAuthCallbackContent />
+    </Suspense>
   )
 }
