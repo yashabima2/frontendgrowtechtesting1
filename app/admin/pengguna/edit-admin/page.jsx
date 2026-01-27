@@ -1,11 +1,14 @@
 'use client'
 
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { PERMISSIONS } from "../../../lib/permissions"
 
-export default function EditAdminPage({ params }) {
+export default function EditAdminPage() {
   const router = useRouter()
-  const { id } = params
+  const params = useParams()
+  const id = params?.id
+
+  const permissionList = Object.values(PERMISSIONS)
 
   return (
     <div className="px-6 py-8 text-white max-w-6xl">
@@ -15,20 +18,34 @@ export default function EditAdminPage({ params }) {
 
       <div className="rounded-2xl border border-purple-700 bg-black p-6">
 
+        {/* FORM DATA */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <input className="input" defaultValue="growtech@central.id" />
-          <input className="input" defaultValue="Ono Suno" />
-          <input className="input" defaultValue="ono" />
+          <input
+            className="input"
+            defaultValue="growtech@central.id"
+            placeholder="Email"
+          />
+          <input
+            className="input"
+            defaultValue="Ono Suno"
+            placeholder="Nama Lengkap"
+          />
+          <input
+            className="input"
+            defaultValue="ono"
+            placeholder="Username"
+          />
 
-          <select className="input">
-            <option selected>Admin</option>
-            <option>Super Admin</option>
+          <select className="input default-select">
+            <option value="admin">Admin</option>
+            <option value="superadmin">Super Admin</option>
           </select>
         </div>
 
+        {/* PERMISSIONS */}
         <h3 className="font-semibold mb-3">Hak Akses</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-          {PERMISSIONS.map(p => (
+          {permissionList.map((p) => (
             <label key={p} className="flex items-center gap-2">
               <input type="checkbox" defaultChecked />
               {p}
@@ -36,6 +53,7 @@ export default function EditAdminPage({ params }) {
           ))}
         </div>
 
+        {/* ACTION BUTTONS */}
         <div className="flex justify-end gap-3 mt-8">
           <button
             onClick={() => router.back()}
