@@ -6,6 +6,9 @@ import { PERMISSIONS } from "../../../lib/permissions"
 export default function TambahAdminPage() {
   const router = useRouter()
 
+  // Ubah object PERMISSIONS jadi array
+  const permissionList = Object.values(PERMISSIONS)
+
   return (
     <div className="px-6 py-8 text-white max-w-6xl">
       <h1 className="text-3xl font-bold mb-6">Tambah Admin</h1>
@@ -18,9 +21,9 @@ export default function TambahAdminPage() {
           <input className="input" placeholder="Full Name" />
           <input className="input" placeholder="Username" />
 
-          <select className="input">
-            <option>Admin</option>
-            <option>Super Admin</option>
+          <select className="input" defaultValue="admin">
+            <option value="admin">Admin</option>
+            <option value="superadmin">Super Admin</option>
           </select>
 
           <input
@@ -33,7 +36,7 @@ export default function TambahAdminPage() {
         {/* HAK AKSES */}
         <h3 className="font-semibold mb-3">Hak Akses</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-          {PERMISSIONS.map(p => (
+          {permissionList.map((p) => (
             <label key={p} className="flex items-center gap-2">
               <input type="checkbox" />
               {p}
