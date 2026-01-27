@@ -77,7 +77,7 @@ export default function KontakPage() {
     const token = Cookies.get('token')
     const uploaded = await uploadIcon()
 
-    await fetch(`${API}/api/v1/admin/settings/upsert`, {
+    const res = await fetch(`${API}/api/v1/admin/settings/upsert`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -96,6 +96,13 @@ export default function KontakPage() {
         },
       }),
     })
+
+    console.log("UPSERT STATUS:", res.status)
+
+    resetModal()
+    loadContacts()
+  }
+
 
     resetModal()
     loadContacts()
@@ -250,9 +257,11 @@ export default function KontakPage() {
           </div>
 
           <button
+            type="button"
             onClick={handleSubmit}
             className="bg-green-500 text-black px-6 py-2 rounded-lg w-full"
           >
+
             {editing ? 'Simpan Perubahan' : 'Tambah'}
           </button>
         </div>
