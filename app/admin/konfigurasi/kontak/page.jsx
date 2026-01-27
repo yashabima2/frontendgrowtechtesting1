@@ -116,12 +116,6 @@ export default function KontakPage() {
     loadContacts()
   }
 
-
-
-    resetModal()
-    loadContacts()
-  }
-
   /* ================= DELETE ================= */
   const handleDelete = async (key) => {
     if (!confirm('Hapus kontak ini?')) return
