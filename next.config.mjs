@@ -7,6 +7,7 @@ const nextConfig = {
         hostname: 'jleoptqwzrkqtklhmpdc.supabase.co',
       },
     ],
+    domains: ['jleoptqwzrkqtklhmpdc.supabase.co'],
   },
 }
 
