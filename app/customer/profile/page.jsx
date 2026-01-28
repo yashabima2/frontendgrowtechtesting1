@@ -67,13 +67,15 @@ export default function ProfilePage() {
 
         const { path, signed_url, public_url } = signRes.data;
 
+        // Upload file ke storage
         await fetch(signed_url, {
           method: "PUT",
           headers: { "Content-Type": avatarFile.type },
           body: avatarFile,
         });
 
-        const saveRes = await apiFetch("/api/v1/auth/me/avatar", {
+        // Simpan path & url ke DB
+        await apiFetch("/api/v1/auth/me/avatar", {
           method: "PATCH",
           body: JSON.stringify({
             avatar_path: path,
@@ -81,8 +83,12 @@ export default function ProfilePage() {
           }),
         });
 
-        saveRes.data
-        setUser(saveRes.data);
+        // 🔥 AMBIL ULANG PROFILE TERBARU
+        const profileRes = await apiFetch("/api/v1/auth/me/profile", {
+          method: "GET",
+        });
+
+        setUser(profileRes.data); // update context auth
         alert("Avatar berhasil diperbarui");
       } catch (err) {
         console.error(err);
@@ -95,6 +101,7 @@ export default function ProfilePage() {
 
     uploadAvatar();
   }, [avatarFile, setUser]);
+
 
   if (loading) return null;
   if (!user) return <p className="text-white text-center">User tidak ditemukan</p>;
