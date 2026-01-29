@@ -18,6 +18,7 @@ export default function NavbarCustomer() {
 
   const [open, setOpen] = useState(false)
   const [brand, setBrand] = useState({})
+  const avatarSrc = user?.avatar_url || user?.avatar || null
 
   // ✅ HOOK HARUS SELALU DIPANGGIL
   useEffect(() => {
@@ -96,8 +97,20 @@ export default function NavbarCustomer() {
               </div>
             </div>
 
-            <div className="h-9 w-9 rounded-full bg-purple-600 flex items-center justify-center">
-              👤
+            <div className="relative h-9 w-9 rounded-full overflow-hidden bg-purple-600">
+              {avatarSrc ? (
+                <Image
+                  src={`${avatarSrc}?t=${Date.now()}`}
+                  alt="Avatar"
+                  fill
+                  sizes="36px"
+                  className="object-cover"
+                />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center text-white text-sm">
+                  👤
+                </div>
+              )}
             </div>
           </button>
 
