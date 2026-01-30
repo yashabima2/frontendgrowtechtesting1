@@ -51,57 +51,70 @@ export default function TopUpPage() {
 
   const API = process.env.NEXT_PUBLIC_API_URL
 
+  const defaultOptions = {
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    credentials: "include" // 🔥 INI PENTING kalau pakai session/cookie
+  }
+
+
   const handleTopup = async () => {
     try {
       const res = await fetch(`${API}/api/v1/wallet/topups/init`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // "Authorization": `Bearer ${token}` ← kalau pakai auth
-        },
-        body: JSON.stringify({
-          amount: amount
-        })
+        ...defaultOptions,
+        body: JSON.stringify({ amount })
       })
 
-      const result = await res.json()
+      const data = await res.json()
+      if (!data.success) throw new Error("Topup init gagal")
 
-      if (!result.success) throw new Error("Gagal membuat topup")
-
-      const orderId = result.data.order_id
-
-      // 🔥 AUTO SIMULATE BAYAR (biar langsung masuk saldo saat dev)
-      await fetch(`${API}${result.data.simulate_pay_endpoint}`, {
-        method: "POST"
+      // 🔥 simulate bayar DENGAN credentials
+      const simRes = await fetch(`${API}${data.data.simulate_pay_endpoint}`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Accept": "application/json" }
       })
 
+      const simData = await simRes.json()
+      if (!simData.success) throw new Error("Simulate pay gagal")
+
+      await fetchWalletSummary()
       setShowSuccess(true)
-      fetchWalletSummary() // refresh saldo & history
 
     } catch (err) {
-      console.error(err)
+      console.error("TOPUP ERROR:", err)
       alert("Topup gagal")
     }
   }
 
   const fetchWalletSummary = async () => {
     try {
-      const res = await fetch(`${API}/api/v1/wallet/summary`)
-      const result = await res.json()
+      const res = await fetch(`${API}/api/v1/wallet/summary`, {
+        credentials: "include",
+        headers: { "Accept": "application/json" }
+      })
 
-      if (result.success) {
-        setWallet(result.data.wallet)
-        setHistory(result.data.last_entries || [])
+      const data = await res.json()
+
+      if (data.success) {
+        setWallet(data.data.wallet)
+        setHistory(data.data.last_entries || [])
       }
+
     } catch (err) {
-      console.error("Gagal ambil wallet", err)
+      console.error("Wallet fetch error:", err)
     }
   }
+
+
 
   useEffect(() => {
     fetchWalletSummary()
   }, [])
-  
+
   const fee = paymentMethod.fee
   const total = amount + fee
 
@@ -300,7 +313,7 @@ export default function TopUpPage() {
 
             <p className="text-sm text-gray-400">Saldo Terbaru</p>
             <p className="text-2xl font-bold mb-6">
-              Rp {saldoBaru.toLocaleString()}
+              Rp {wallet ? wallet.balance.toLocaleString() : 0}
             </p>
 
             <button
