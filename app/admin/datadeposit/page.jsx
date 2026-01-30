@@ -5,6 +5,7 @@ import { useState } from 'react'
 const API = process.env.NEXT_PUBLIC_API_URL
 
 export default function DataDepositPage() {
+  // const data = type === 'user' ? dataUserDeposit : dataAdminTopup
   const [type, setType] = useState('user') // user | admin
   const [data, setData] = useState([])
 
@@ -46,8 +47,6 @@ export default function DataDepositPage() {
       harga: 'Rp 201.500'
     }
   ]
-
-  const data = type === 'user' ? dataUserDeposit : dataAdminTopup
 
   return (
     <section className="p-6">
