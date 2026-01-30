@@ -2,8 +2,28 @@
 
 import { useState } from 'react'
 
+const API = process.env.NEXT_PUBLIC_API_URL
+
 export default function DataDepositPage() {
   const [type, setType] = useState('user') // user | admin
+  const [data, setData] = useState([])
+
+  useEffect(() => {
+    fetchDeposits()
+  }, [])
+
+  const fetchDeposits = async () => {
+    try {
+      const res = await fetch(`${API}/api/v1/admin/topups`)
+      const result = await res.json()
+
+      if (result.success) {
+        setData(result.data)
+      }
+    } catch (err) {
+      console.error("Gagal ambil data deposit", err)
+    }
+  }
 
   const dataUserDeposit = [
     {
@@ -79,7 +99,7 @@ export default function DataDepositPage() {
               <th>Harga</th>
             </tr>
           </thead>
-          <tbody>
+          {/* <tbody>
             {data.map((item, i) => (
               <tr key={i} className="border-b border-gray-800">
                 <td><input type="checkbox" /></td>
@@ -89,6 +109,19 @@ export default function DataDepositPage() {
                 <td>{item.username}</td>
                 <td>{item.produk}</td>
                 <td>{item.harga}</td>
+              </tr>
+            ))}
+          </tbody> */}
+          <tbody>
+            {data.map((item) => (
+              <tr key={item.id} className="border-b border-gray-800">
+                <td><input type="checkbox" /></td>
+                <td>{item.id}</td>
+                <td>{item.order_id}</td>
+                <td>{item.method || "QRIS"}</td>
+                <td>{item.user?.name || "User"}</td>
+                <td>Topup Saldo</td>
+                <td>Rp {item.amount.toLocaleString()}</td>
               </tr>
             ))}
           </tbody>
