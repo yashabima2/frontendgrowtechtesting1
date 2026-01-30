@@ -5,6 +5,8 @@ import { X, CheckCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useEffect } from "react"
+import Cookies from "js-cookie"
+
 
 /* ================= DATA ================= */
 
@@ -47,6 +49,12 @@ export default function TopUpPage() {
 
   const [wallet, setWallet] = useState(null)
   const [history, setHistory] = useState([])
+  const [token, setToken] = useState(null)
+
+  useEffect(() => {
+    setToken(Cookies.get("token"))
+  }, [])
+
 
 
   const API = process.env.NEXT_PUBLIC_API_URL
@@ -54,28 +62,40 @@ export default function TopUpPage() {
   const defaultOptions = {
     headers: {
       "Content-Type": "application/json",
-      "Accept": "application/json"
-    },
-    credentials: "include" // 🔥 INI PENTING kalau pakai session/cookie
+      "Accept": "application/json",
+      "Authorization": `Bearer ${token}`
+    }
   }
 
+  const getAuthHeaders = () => ({
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+    "Authorization": `Bearer ${token}`
+  })
 
   const handleTopup = async () => {
+    if (!token) {
+      alert("Silakan login ulang")
+      router.push("/login")
+      return
+    }
+
     try {
       const res = await fetch(`${API}/api/v1/wallet/topups/init`, {
         method: "POST",
-        ...defaultOptions,
+        headers: getAuthHeaders(),
         body: JSON.stringify({ amount })
       })
 
       const data = await res.json()
       if (!data.success) throw new Error("Topup init gagal")
 
-      // 🔥 simulate bayar DENGAN credentials
       const simRes = await fetch(`${API}${data.data.simulate_pay_endpoint}`, {
         method: "POST",
-        credentials: "include",
-        headers: { "Accept": "application/json" }
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
       })
 
       const simData = await simRes.json()
@@ -91,10 +111,14 @@ export default function TopUpPage() {
   }
 
   const fetchWalletSummary = async () => {
+    if (!token) return
+
     try {
       const res = await fetch(`${API}/api/v1/wallet/summary`, {
-        credentials: "include",
-        headers: { "Accept": "application/json" }
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
       })
 
       const data = await res.json()
@@ -109,11 +133,10 @@ export default function TopUpPage() {
     }
   }
 
-
-
   useEffect(() => {
-    fetchWalletSummary()
-  }, [])
+    if (token) fetchWalletSummary()
+  }, [token])
+
 
   const fee = paymentMethod.fee
   const total = amount + fee
