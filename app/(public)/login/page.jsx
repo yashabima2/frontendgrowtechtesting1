@@ -35,19 +35,31 @@ export default function LoginPage() {
       }
 
       const json = await res.json()
+      const token = json.data.token
 
-      // ✅ SIMPAN TOKEN
-      Cookies.set("token", json.data.token, {
+      // ✅ Simpan token
+      Cookies.set("token", token, {
         path: "/",
         sameSite: "lax",
       })
 
-      // ✅ SIMPAN USER KE CONTEXT
-      const user = json.data.user
-      setUser(user)
+      // ✅ Ambil profile lengkap (ADA AVATAR)
+      const profileRes = await fetch(`${API}/api/v1/auth/me/profile`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
 
-      // ✅ REDIRECT BERDASARKAN ROLE
-      if (user.role === "admin") {
+      if (!profileRes.ok) throw new Error("Gagal mengambil profile")
+
+      const profileJson = await profileRes.json()
+
+      // ✅ Simpan user lengkap ke context
+      setUser(profileJson.data)
+
+      // ✅ Redirect
+      if (profileJson.data.role === "admin") {
         router.replace("/admin/dashboard")
       } else {
         router.replace("/customer")
@@ -59,6 +71,7 @@ export default function LoginPage() {
       setLoading(false)
     }
   }
+
 
   const handleGoogleLogin = () => {
     window.location.href = `${API}/api/v1/auth/google/redirect`
