@@ -13,8 +13,14 @@ export function AuthProvider({ children }) {
   const API = process.env.NEXT_PUBLIC_API_URL
 
   useEffect(() => {
-    const token = Cookies.get("token")
+  const token = Cookies.get("token")
     if (!token) {
+      setLoading(false)
+      return
+    }
+
+    // 🔥 JANGAN FETCH LAGI kalau user sudah ada
+    if (user) {
       setLoading(false)
       return
     }
@@ -22,9 +28,7 @@ export function AuthProvider({ children }) {
     const fetchMe = async () => {
       try {
         const res = await fetch(`${API}/api/v1/auth/me/profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         })
 
         if (!res.ok) throw new Error("Unauthorized")
@@ -42,7 +46,7 @@ export function AuthProvider({ children }) {
     }
 
     fetchMe()
-  }, [API])
+  }, [API, router, user])
 
   const logout = async () => {
     const token = Cookies.get("token")
