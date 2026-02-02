@@ -55,10 +55,15 @@ export default function LoginPage() {
 
       const profileJson = await profileRes.json()
 
-      // ✅ Simpan user lengkap ke context
-      Cookies.set("token", token, { path: "/", sameSite: "lax" })
+      // 🔥 LANGSUNG SET USER BIAR NAVBAR PUNYA DATA
+      setUser(profileJson.data)
 
-      router.replace("/customer")
+      // baru redirect
+      if (profileJson.data.role === "admin") {
+        router.replace("/admin/dashboard")
+      } else {
+        router.replace("/customer")
+      }
 
 
       // ✅ Redirect
