@@ -100,7 +100,8 @@ export default function NavbarCustomer() {
             <div className="relative h-9 w-9 rounded-full overflow-hidden bg-purple-600">
               {avatarSrc ? (
                 <Image
-                  src={`${avatarSrc}?t=${Date.now()}`}
+                  key={avatarSrc}
+                  src={avatarSrc}
                   alt="Avatar"
                   fill
                   sizes="36px"
