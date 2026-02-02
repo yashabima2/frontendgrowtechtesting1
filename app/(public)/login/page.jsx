@@ -65,14 +65,6 @@ export default function LoginPage() {
         router.replace("/customer")
       }
 
-
-      // ✅ Redirect
-      if (profileJson.data.role === "admin") {
-        router.replace("/admin/dashboard")
-      } else {
-        router.replace("/customer")
-      }
-
     } catch (err) {
       alert(err.message)
     } finally {
