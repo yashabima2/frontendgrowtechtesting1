@@ -1,34 +1,37 @@
 'use client'
-import { useEffect, useState } from "react"
 
-export default function ThemeToggle() {
-  const [dark, setDark] = useState(true)
+import { Sun, Moon } from "lucide-react"
 
-  useEffect(() => {
-    const saved = localStorage.getItem("admin-theme")
-    if (saved === "light") {
-      document.documentElement.classList.remove("dark")
-      setDark(false)
-    }
-  }, [])
+export default function ThemeToggle({ theme, setTheme }) {
+  const isDark = theme === "dark"
 
   const toggleTheme = () => {
-    if (dark) {
-      document.documentElement.classList.remove("dark")
-      localStorage.setItem("admin-theme", "light")
-    } else {
-      document.documentElement.classList.add("dark")
-      localStorage.setItem("admin-theme", "dark")
-    }
-    setDark(!dark)
+    setTheme(isDark ? "light" : "dark")
   }
 
   return (
     <button
       onClick={toggleTheme}
-      className="px-3 py-2 rounded-lg bg-zinc-200 dark:bg-zinc-700 text-sm"
+      className="
+        flex items-center gap-2
+        px-3 py-2 rounded-lg
+        bg-zinc-200 dark:bg-zinc-700
+        text-zinc-900 dark:text-white
+        hover:opacity-90
+        transition
+      "
     >
-      {dark ? "🌙 Dark" : "☀️ Light"}
+      {isDark ? (
+        <>
+          <Moon className="h-4 w-4" />
+          Dark
+        </>
+      ) : (
+        <>
+          <Sun className="h-4 w-4" />
+          Light
+        </>
+      )}
     </button>
   )
 }

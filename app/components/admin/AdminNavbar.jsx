@@ -6,7 +6,7 @@ import { useAuth } from "../../../app/hooks/useAuth"
 import { useState, useRef, useEffect } from "react"
 import ThemeToggle from "./ThemeToggle"
 
-export default function AdminNavbar({ onMenuClick }) {
+export default function AdminNavbar({ onMenuClick, theme, setTheme }) {
   const { user, logout } = useAuth()
   const [open, setOpen] = useState(false)
   const dropdownRef = useRef(null)
@@ -44,7 +44,7 @@ export default function AdminNavbar({ onMenuClick }) {
           <ShoppingCart className="h-5 w-5" />
         </Button>
 
-        <ThemeToggle />
+        <ThemeToggle theme={theme} setTheme={setTheme} />
 
         {/* USER + DROPDOWN */}
         <div className="relative" ref={dropdownRef}>
