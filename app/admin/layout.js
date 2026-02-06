@@ -1,24 +1,22 @@
-'use client'
+"use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import AdminNavbar from "../components/admin/AdminNavbar"
 import AdminSidebar from "../components/admin/AdminSidebar"
 import AdminFooter from "../components/admin/AdminFooter"
 
 export default function AdminLayout({ children }) {
-  const [theme, setTheme] = useState("dark") // default admin = dark
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [collapsed, setCollapsed] = useState(false)
+  const [theme, setTheme] = useState("dark") // default admin dark
 
-  // load theme admin
+  // load theme dari localStorage
   useEffect(() => {
     const saved = localStorage.getItem("admin-theme")
-    if (saved === "light" || saved === "dark") {
-      setTheme(saved)
-    }
+    if (saved) setTheme(saved)
   }, [])
 
-  // apply ke <html>
+  // apply theme ke html
   useEffect(() => {
     const html = document.documentElement
     html.classList.remove("light", "dark")
@@ -54,8 +52,10 @@ export default function AdminLayout({ children }) {
         <div className="p-4 lg:p-6 text-zinc-900 dark:text-zinc-100">
           {children}
         </div>
+
         <AdminFooter />
       </main>
+
     </div>
   )
 }
