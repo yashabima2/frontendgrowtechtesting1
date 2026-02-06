@@ -49,7 +49,7 @@ export default function DashboardPage() {
           Dashboard Admin
         </h1>
         <p className="text-gray-400">
-          Halo, Selamat datang <span className="font-semibold text-white">{userName}</span> 👋
+          Halo, Selamat datang <span className="font-semibold text-white">{userName}</span>
         </p>
       </header>
 
