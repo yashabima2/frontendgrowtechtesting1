@@ -530,3 +530,30 @@ body {
 }
 
 /* ================= ADMIN KATEGORI PRODUK ================= */
+.btn-filter {
+  @apply h-10 px-4 rounded-full bg-purple-800/60 text-white text-sm hover:bg-purple-700 transition;
+}
+
+.btn-add {
+  @apply h-10 px-4 rounded-full bg-green-500 text-black font-medium hover:bg-green-400 transition;
+}
+
+.btn-edit {
+  @apply h-10 px-4 rounded-full bg-white text-black font-medium hover:bg-gray-200 transition;
+}
+
+.btn-delete {
+  @apply h-10 px-4 rounded-full bg-red-600 text-white font-medium hover:bg-red-500 transition;
+}
+
+.btn-edit-sm {
+  @apply px-3 py-1 rounded bg-white text-black text-xs hover:bg-gray-200 transition;
+}
+
+.btn-delete-sm {
+  @apply px-3 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-500 transition;
+}
+
+.badge-ready {
+  @apply inline-block px-3 py-1 rounded-full bg-green-500 text-black text-xs font-semibold;
+}
