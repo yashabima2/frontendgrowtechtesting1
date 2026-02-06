@@ -13,7 +13,7 @@ export default function ForgotPasswordPage() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/password/forgot`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/password/forgot`,
         {
           method: "POST",
           headers: {
