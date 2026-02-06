@@ -2,6 +2,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   Package,
@@ -18,8 +20,8 @@ import {
 
 const mainMenus = [
   { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-  { label: "Produk", href: "/admin/produk", icon: Package },
-  { label: "Kategori", href: "/admin/kategori", icon: Layers },
+  // { label: "Produk", href: "/admin/produk", icon: Package },
+  // { label: "Kategori", href: "/admin/kategori", icon: Layers },
 ];
 
 
@@ -99,7 +101,7 @@ export default function AdminSidebar({ open, setOpen, collapsed }) {
         </div> */}
 
         {/* NAVIGATION */}
-        <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-6 text-sm">
+        <nav className="flex-1 overflow-y-auto overscroll-contain px-3 py-5 pb-24 space-y-6 text-sm">
 
           <SidebarGroup title="Main Navigation">
             {mainMenus.map(menu => (
@@ -109,6 +111,17 @@ export default function AdminSidebar({ open, setOpen, collapsed }) {
                 pathname={pathname}
               />
             ))}
+
+            <SidebarDropdown
+              label="Manajemen Produk"
+              icon={Package}
+              pathname={pathname}
+              items={[
+                { label: "Kategori", href: "/admin/kategori" },
+                { label: "Sub Kategori", href: "/admin/sub-kategori" },
+                { label: "Produk", href: "/admin/produk" },
+              ]}
+            />
           </SidebarGroup>
 
           <SidebarGroup title="Management">
@@ -205,4 +218,72 @@ function SidebarItem({ label, href, icon: Icon, pathname, collapsed }) {
       {!collapsed && <span className="truncate">{label}</span>}
     </Link>
   )
+}
+
+function SidebarDropdown({ label, icon: Icon, items, pathname }) {
+  const isActive = items.some(item => pathname.startsWith(item.href));
+  const [open, setOpen] = useState(isActive);
+
+  useEffect(() => {
+    if (isActive) setOpen(true);
+  }, [isActive]);
+
+  return (
+    <div>
+      {/* PARENT */}
+      <button
+        onClick={() => setOpen(!open)}
+        className={`
+          w-full flex items-center justify-between
+          px-4 py-2.5 rounded-lg
+          transition
+          ${isActive
+            ? "bg-purple-600 text-white"
+            : "text-gray-300 hover:bg-purple-800/40 hover:text-white"}
+        `}
+      >
+        <div className="flex items-center gap-3">
+          <Icon size={18} />
+          <span>{label}</span>
+        </div>
+
+        <ChevronDown
+          size={16}
+          className={`transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {/* CHILD */}
+      {open && (
+        <div
+          className={`
+            mt-1 ml-8 space-y-1 pb-2
+            overflow-hidden
+            transition-all duration-300
+            ${open ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}
+          `}
+        >
+          {items.map(item => {
+            const active = pathname.startsWith(item.href);
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`
+                  block px-3 py-2 rounded-md text-sm
+                  transition
+                  ${active
+                    ? "bg-purple-700 text-white"
+                    : "text-gray-300 hover:bg-purple-800/40"}
+                `}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
