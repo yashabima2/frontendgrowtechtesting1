@@ -26,7 +26,17 @@ export default function KategoriPage() {
     const res = await fetch(`${API}/api/v1/admin/categories`, {
       credentials: 'include'
     })
-    const json = await res.json()
+    const text = await res.text()
+
+    let json
+    try {
+      json = JSON.parse(text)
+    } catch (e) {
+      console.error('API returned non-JSON:', text)
+      alert('Server error, cek backend')
+      return
+    }
+
     setCategories(json.data || [])
     setLoading(false)
   }
@@ -54,7 +64,17 @@ export default function KategoriPage() {
       body: JSON.stringify(form)
     })
 
-    const json = await res.json()
+    const text = await res.text()
+
+    let json
+    try {
+      json = JSON.parse(text)
+    } catch (e) {
+      console.error('API returned non-JSON:', text)
+      alert('Server error, cek backend')
+      return
+    }
+
 
     if (json.success) {
       fetchCategories()
@@ -78,7 +98,17 @@ export default function KategoriPage() {
       }
     )
 
-    const json = await res.json()
+    const text = await res.text()
+
+    let json
+    try {
+      json = JSON.parse(text)
+    } catch (e) {
+      console.error('API returned non-JSON:', text)
+      alert('Server error, cek backend')
+      return
+    }
+
 
     if (json.success) {
       fetchCategories()
