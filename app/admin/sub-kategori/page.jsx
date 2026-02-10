@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
+import Cookies from 'js-cookie'
 
 const API = process.env.NEXT_PUBLIC_API_URL
 
@@ -24,21 +25,42 @@ export default function SubKategoriPage() {
     sort_order: 1
   })
 
+  const authHeaders = () => {
+    const token = Cookies.get('token')
+    return {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
+      'Content-Type': 'application/json'
+    }
+  }
+
+
   // ================= FETCH =================
   const fetchAll = async () => {
     setLoading(true)
 
     const [subRes, catRes] = await Promise.all([
       fetch(`${API}/api/v1/admin/subcategories`, {
-        credentials: 'include'
+        headers: authHeaders()
       }),
       fetch(`${API}/api/v1/admin/categories`, {
-        credentials: 'include'
+        headers: authHeaders()
       })
     ])
 
-    const subJson = await subRes.json()
-    const catJson = await catRes.json()
+    const subText = await subRes.text()
+    const catText = await catRes.text()
+
+    let subJson, catJson
+    try {
+      subJson = JSON.parse(subText)
+      catJson = JSON.parse(catText)
+    } catch (e) {
+      console.error('Non JSON response:', subText, catText)
+      alert('Server error (cek backend)')
+      setLoading(false)
+      return
+    }
 
     setItems(subJson.data || [])
     setCategories(catJson.data || [])
@@ -63,11 +85,7 @@ export default function SubKategoriPage() {
 
     const res = await fetch(url, {
       method,
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json'
-      },
-      credentials: 'include',
+      headers: authHeaders(),
       body: JSON.stringify(form)
     })
 
@@ -101,7 +119,7 @@ export default function SubKategoriPage() {
       `${API}/api/v1/admin/subcategories/${selected.id}`,
       {
         method: 'DELETE',
-        credentials: 'include'
+        headers: authHeaders()
       }
     )
 
