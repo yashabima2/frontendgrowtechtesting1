@@ -20,6 +20,15 @@ export default function KategoriPage() {
     is_active: true,
     sort_order: 1
   })
+  
+  const authHeaders = () => {
+    const token = Cookies.get('token')
+    return {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
+      'Content-Type': 'application/json'
+    }
+  }
 
   // ================= FETCH =================
   const fetchCategories = async () => {
