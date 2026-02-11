@@ -1,18 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Image from 'next/image'
+import NextImage from 'next/image'
 import Cookies from 'js-cookie'
-import { motion } from "framer-motion";
-import { authFetch } from "../../lib/authFetch";
-import { X } from "lucide-react";
-// import { supabase } from '../../lib/supabaseClient'
+import { motion } from 'framer-motion'
+import { authFetch } from '../../lib/authFetch'
+import { X } from 'lucide-react'
 
 const API = process.env.NEXT_PUBLIC_API_URL
-// const SUPABASE_BUCKET = 'subcategories'
 
 export default function SubKategoriPage() {
-
   const [items, setItems] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
@@ -20,6 +17,7 @@ export default function SubKategoriPage() {
   const [showModal, setShowModal] = useState(false)
   const [mode, setMode] = useState('create')
   const [selected, setSelected] = useState(null)
+
   const [submitting, setSubmitting] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -34,11 +32,11 @@ export default function SubKategoriPage() {
     image_url: '',
     image_path: '',
     is_active: true,
-    sort_order: 1
+    sort_order: 1,
   })
 
   const generateSlug = (text) => {
-    return text
+    return (text || '')
       .toLowerCase()
       .trim()
       .replace(/[^a-z0-9\s-]/g, '')
@@ -46,23 +44,14 @@ export default function SubKategoriPage() {
       .replace(/-+/g, '-')
   }
 
-  const authHeaders = () => {
-    const token = Cookies.get('token')
-    return {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/json',
-      'Content-Type': 'application/json'
-    }
-  }
-
+  // ✅ FIX: jangan pakai "new Image()" karena Image sudah dipakai NextImage
   const compressImage = (file) => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader()
-
       reader.readAsDataURL(file)
 
       reader.onload = (event) => {
-        const img = new Image()
+        const img = new window.Image()
         img.src = event.target.result
 
         img.onload = () => {
@@ -70,69 +59,73 @@ export default function SubKategoriPage() {
           const ctx = canvas.getContext('2d')
 
           const maxWidth = 800
-          const scale = maxWidth / img.width
+          const scale = Math.min(1, maxWidth / img.width)
 
-          canvas.width = maxWidth
-          canvas.height = img.height * scale
+          canvas.width = Math.round(img.width * scale)
+          canvas.height = Math.round(img.height * scale)
 
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
 
           canvas.toBlob(
             (blob) => {
-              resolve(new File([blob], file.name, { type: 'image/jpeg' }))
+              if (!blob) return reject(new Error('Failed to compress image'))
+              const safeName = file.name.replace(/\.\w+$/, '.jpg')
+              resolve(new File([blob], safeName, { type: 'image/jpeg' }))
             },
             'image/jpeg',
             0.8
           )
         }
+
+        img.onerror = () => reject(new Error('Invalid image'))
       }
+
+      reader.onerror = () => reject(new Error('Failed to read file'))
     })
   }
 
-
   // ================= FETCH =================
   const fetchAll = async () => {
-    setLoading(true);
-
+    setLoading(true)
     try {
       const [subRes, catRes] = await Promise.all([
-        authFetch("/api/v1/admin/subcategories"),
-        authFetch("/api/v1/admin/categories"),
-      ]);
+        authFetch('/api/v1/admin/subcategories'),
+        authFetch('/api/v1/admin/categories'),
+      ])
 
-      const subJson = await subRes.json();
-      const catJson = await catRes.json();
+      const subJson = await subRes.json()
+      const catJson = await catRes.json()
 
-      setItems(subJson.data || []);
-      setCategories(catJson.data || []);
+      setItems(subJson.data || [])
+      setCategories(catJson.data || [])
     } catch (err) {
-      alert("Gagal mengambil data");
+      console.error(err)
+      alert('Gagal mengambil data')
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    if (!showModal) return;
-
-    const handleEsc = (e) => {
-      if (e.key === "Escape") closeModal();
-    };
-
-    document.addEventListener("keydown", handleEsc);
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", handleEsc);
-      document.body.style.overflow = "auto";
-    };
-  }, [showModal]);
-
-
+  }
 
   useEffect(() => {
     fetchAll()
   }, [])
+
+  // ESC close + lock scroll
+  useEffect(() => {
+    if (!showModal) return
+
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') closeModal()
+    }
+
+    document.addEventListener('keydown', handleEsc)
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.removeEventListener('keydown', handleEsc)
+      document.body.style.overflow = 'auto'
+    }
+  }, [showModal])
 
   // ================= HANDLE IMAGE UPLOAD =================
   const handleImageUpload = async (file) => {
@@ -156,11 +149,12 @@ export default function SubKategoriPage() {
 
     try {
       const token = Cookies.get('token')
+      if (!token) throw new Error('Token tidak ditemukan, silakan login ulang')
 
-      // compress → tetap ikut mime hasil compress
+      // compress -> output jpeg
       const compressedFile = await compressImage(file)
 
-      // ✅ SIGN: kirim mime
+      // 1) SIGN (Laravel)
       const signRes = await fetch(`${API}/api/v1/admin/subcategories/logo/sign`, {
         method: 'POST',
         headers: {
@@ -168,22 +162,22 @@ export default function SubKategoriPage() {
           'Content-Type': 'application/json',
           Accept: 'application/json',
         },
-        body: JSON.stringify({
-          mime: compressedFile.type, // ✅ WAJIB
-        }),
+        body: JSON.stringify({ mime: compressedFile.type }),
       })
 
       const signJson = await signRes.json()
 
-      if (!signRes.ok || !signJson.success) {
+      if (!signRes.ok || !signJson?.success) {
         console.log('SIGN ERROR:', signJson)
-        alert(signJson?.error?.message || 'Gagal generate signed URL')
-        return
+        throw new Error(signJson?.error?.message || 'Gagal generate signed URL')
       }
 
-      const { signedUrl, path, publicUrl } = signJson.data
+      const { signedUrl, path, publicUrl } = signJson.data || {}
+      if (!signedUrl || !path || !publicUrl) {
+        throw new Error('Response signed URL tidak lengkap')
+      }
 
-      // ✅ UPLOAD: PUT ke signedUrl (bukan ke public url)
+      // 2) UPLOAD (Supabase) -> PUT ke signedUrl
       await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest()
         xhr.open('PUT', signedUrl)
@@ -205,13 +199,12 @@ export default function SubKategoriPage() {
         xhr.send(compressedFile)
       })
 
-      // ✅ SIMPAN KE FORM
-      setForm(prev => ({
+      // 3) SET FORM
+      setForm((prev) => ({
         ...prev,
         image_url: publicUrl,
-        image_path: path
+        image_path: path,
       }))
-
       setPreview(publicUrl)
     } catch (err) {
       console.error(err)
@@ -221,72 +214,83 @@ export default function SubKategoriPage() {
     }
   }
 
-
   // ================= CREATE / UPDATE =================
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
+    e.preventDefault()
 
-    const endpoint =
-      mode === "edit"
-        ? `/api/v1/admin/subcategories/${selected.id}`
-        : `/api/v1/admin/subcategories`;
+    if (uploading) {
+      alert('Tunggu upload selesai dulu ya.')
+      return
+    }
 
-    const method = mode === "edit" ? "PATCH" : "POST";
+    setSubmitting(true)
 
-    const res = await authFetch(endpoint, {
-      method,
-      body: JSON.stringify({
-        category_id: parseInt(form.category_id),
+    try {
+      const endpoint =
+        mode === 'edit'
+          ? `/api/v1/admin/subcategories/${selected?.id}`
+          : `/api/v1/admin/subcategories`
+
+      const method = mode === 'edit' ? 'PATCH' : 'POST'
+
+      // ✅ jangan kirim 0 untuk sort_order
+      const payload = {
+        category_id: Number(form.category_id),
         name: form.name,
         slug: form.slug,
         provider: form.provider || null,
         image_url: form.image_url || null,
         image_path: form.image_path || null,
-        is_active: form.is_active,
-        sort_order: parseInt(form.sort_order) || 0,
-      }),
-    });
+        is_active: !!form.is_active,
+        sort_order: Number(form.sort_order) || 1,
+      }
 
-    console.log({
-      category_id: Number(form.category_id),
-      name: form.name,
-      slug: form.slug,
-      provider: form.provider,
-      image_url: form.image_url,
-      image_path: form.image_path,
-      is_active: form.is_active,
-      sort_order: Number(form.sort_order),
-    })
+      console.log('PAYLOAD:', payload)
 
+      const res = await authFetch(endpoint, {
+        method,
+        body: JSON.stringify(payload),
+      })
 
-    const json = await res.json();
+      const json = await res.json()
 
-    if (json.success) {
-      fetchAll();
-      closeModal();
-    } else {
-      alert("Gagal menyimpan");
+      if (!res.ok || !json?.success) {
+        console.log('SAVE ERROR:', json)
+        throw new Error(json?.error?.message || 'Gagal menyimpan')
+      }
+
+      await fetchAll()
+      closeModal()
+    } catch (err) {
+      console.error(err)
+      alert(err?.message || 'Gagal menyimpan')
+    } finally {
+      setSubmitting(false)
     }
-
-    setSubmitting(false);
-  };
+  }
 
   const handleDelete = async () => {
-    setSubmitting(true);
+    if (!selected?.id) return
+    setSubmitting(true)
 
-    await authFetch(`/api/v1/admin/subcategories/${selected.id}`, {
-      method: "DELETE",
-    });
+    try {
+      await authFetch(`/api/v1/admin/subcategories/${selected.id}`, {
+        method: 'DELETE',
+      })
 
-    fetchAll();
-    closeModal();
-    setSubmitting(false);
-  };
-
+      await fetchAll()
+      closeModal()
+    } catch (err) {
+      console.error(err)
+      alert('Gagal menghapus')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   const openCreate = () => {
     setMode('create')
+    setSelected(null)
     setPreview(null)
     setForm({
       category_id: '',
@@ -296,7 +300,7 @@ export default function SubKategoriPage() {
       image_url: '',
       image_path: '',
       is_active: true,
-      sort_order: 1
+      sort_order: 1,
     })
     setShowModal(true)
   }
@@ -304,16 +308,16 @@ export default function SubKategoriPage() {
   const openEdit = (item) => {
     setMode('edit')
     setSelected(item)
-    setPreview(item.image_url)
+    setPreview(item?.image_url || null)
     setForm({
       category_id: item.category_id,
       name: item.name,
       slug: item.slug,
-      provider: item.provider,
-      image_url: item.image_url,
-      image_path: item.image_path,
-      is_active: item.is_active,
-      sort_order: item.sort_order
+      provider: item.provider || '',
+      image_url: item.image_url || '',
+      image_path: item.image_path || '',
+      is_active: !!item.is_active,
+      sort_order: item.sort_order || 1,
     })
     setShowModal(true)
   }
@@ -326,19 +330,10 @@ export default function SubKategoriPage() {
 
   return (
     <div className="space-y-6">
-
-      <h1 className="text-3xl font-bold text-white">
-        Manajemen Sub Kategori
-      </h1>
+      <h1 className="text-3xl font-bold text-white">Manajemen Sub Kategori</h1>
 
       <motion.div
-        className="
-          rounded-2xl
-          border border-purple-600/60
-          bg-black
-          p-6
-          shadow-[0_0_25px_rgba(168,85,247,0.15)]
-        "
+        className="rounded-2xl border border-purple-600/60 bg-black p-6 shadow-[0_0_25px_rgba(168,85,247,0.15)]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
@@ -348,38 +343,54 @@ export default function SubKategoriPage() {
           </button>
         </div>
 
-        <table className="w-full text-sm text-gray-300">
-          <thead>
-            <tr className="border-b border-white/10">
-              <th>ID</th>
-              <th>Logo</th>
-              <th>Nama</th>
-              <th>Kategori</th>
-              <th>Provider</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {items.map(item => (
-              <tr key={item.id}>
-                <td>{item.id}</td>
-                <td>
-                  {item.image_url && (
-                    <Image src={item.image_url} width={40} height={40} alt="" />
-                  )}
-                </td>
-                <td>{item.name}</td>
-                <td>{item.category?.name}</td>
-                <td>{item.provider}</td>
-                <td className="space-x-2">
-                  <button onClick={() => openEdit(item)} className="btn-edit-sm">Edit</button>
-                  <button onClick={() => setSelected(item)} className="btn-delete-sm">Hapus</button>
-                </td>
+        {loading ? (
+          <p className="text-gray-300">Loading...</p>
+        ) : (
+          <table className="w-full text-sm text-gray-300">
+            <thead>
+              <tr className="border-b border-white/10">
+                <th>ID</th>
+                <th>Logo</th>
+                <th>Nama</th>
+                <th>Kategori</th>
+                <th>Provider</th>
+                <th>Aksi</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody>
+              {items.map((item) => (
+                <tr key={item.id} className="border-b border-white/5">
+                  <td>{item.id}</td>
+                  <td>
+                    {item.image_url ? (
+                      <NextImage src={item.image_url} width={40} height={40} alt="" />
+                    ) : (
+                      <span className="text-white/30">-</span>
+                    )}
+                  </td>
+                  <td>{item.name}</td>
+                  <td>{item.category?.name}</td>
+                  <td>{item.provider}</td>
+                  <td className="space-x-2">
+                    <button onClick={() => openEdit(item)} className="btn-edit-sm">
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelected(item)
+                        if (confirm('Yakin hapus sub kategori ini?')) handleDelete()
+                      }}
+                      className="btn-delete-sm"
+                    >
+                      Hapus
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </motion.div>
 
       {/* MODAL */}
@@ -401,8 +412,7 @@ export default function SubKategoriPage() {
             <button
               type="button"
               onClick={closeModal}
-              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center 
-                        rounded-full bg-white/10 hover:bg-purple-600 transition text-white"
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-purple-600 transition text-white"
             >
               <X size={18} />
             </button>
@@ -411,12 +421,14 @@ export default function SubKategoriPage() {
               <select
                 className="input-primary mb-3"
                 value={form.category_id}
-                onChange={e => setForm({ ...form, category_id: e.target.value })}
+                onChange={(e) => setForm({ ...form, category_id: e.target.value })}
                 required
               >
                 <option value="">Pilih kategori</option>
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
                 ))}
               </select>
 
@@ -424,63 +436,55 @@ export default function SubKategoriPage() {
                 className="input-primary mb-3"
                 placeholder="Nama"
                 value={form.name}
-                onChange={e => {
+                onChange={(e) => {
                   const name = e.target.value
                   setForm({
                     ...form,
                     name,
-                    slug: generateSlug(name)
+                    slug: generateSlug(name),
                   })
                 }}
                 required
               />
 
-              <input
-                className="input-primary mb-3"
-                placeholder="Slug"
-                value={form.slug}
-                readOnly
-              />
+              <input className="input-primary mb-3" placeholder="Slug" value={form.slug} readOnly />
 
               <input
                 className="input-primary mb-3"
                 placeholder="Provider"
                 value={form.provider}
-                onChange={e => setForm({ ...form, provider: e.target.value })}
+                onChange={(e) => setForm({ ...form, provider: e.target.value })}
               />
 
               <input
                 type="file"
                 className="mb-3"
                 accept="image/*"
-                onChange={e => handleImageUpload(e.target.files[0])}
+                onChange={(e) => handleImageUpload(e.target.files?.[0])}
               />
+
               {uploading && (
                 <div className="mb-3">
                   <div className="w-full bg-purple-900/40 rounded h-2">
                     <div
                       className="bg-purple-500 h-2 rounded transition-all"
                       style={{ width: `${progress}%` }}
-                    ></div>
+                    />
                   </div>
-                  <p className="text-xs text-purple-300 mt-1">
-                    Uploading... {progress}%
-                  </p>
+                  <p className="text-xs text-purple-300 mt-1">Uploading... {progress}%</p>
                 </div>
               )}
 
               {preview && (
                 <div className="mb-3">
-                  <Image src={preview} width={80} height={80} alt="preview" />
+                  <NextImage src={preview} width={80} height={80} alt="preview" />
                 </div>
               )}
 
-              <button className="btn-add w-full" disabled={submitting}>
-                {submitting ? 'Menyimpan...' : 'Simpan'}
+              <button className="btn-add w-full" disabled={submitting || uploading}>
+                {submitting ? 'Menyimpan...' : uploading ? 'Uploading...' : 'Simpan'}
               </button>
-
             </form>
-
           </motion.div>
         </motion.div>
       )}
