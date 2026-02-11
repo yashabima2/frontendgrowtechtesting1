@@ -4,10 +4,13 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Cookies from 'js-cookie'
 import { motion } from "framer-motion";
+import { supabase } from '@/lib/supabase'
 
 const API = process.env.NEXT_PUBLIC_API_URL
+const SUPABASE_BUCKET = 'subcategories'
 
 export default function SubKategoriPage() {
+
   const [items, setItems] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
@@ -16,6 +19,8 @@ export default function SubKategoriPage() {
   const [mode, setMode] = useState('create')
   const [selected, setSelected] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+
+  const [preview, setPreview] = useState(null)
 
   const [form, setForm] = useState({
     category_id: '',
@@ -27,6 +32,15 @@ export default function SubKategoriPage() {
     is_active: true,
     sort_order: 1
   })
+
+  const generateSlug = (text) => {
+    return text
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+  }
 
   const authHeaders = () => {
     const token = Cookies.get('token')
@@ -57,6 +71,35 @@ export default function SubKategoriPage() {
   useEffect(() => {
     fetchAll()
   }, [])
+
+  // ================= HANDLE IMAGE UPLOAD =================
+  const handleImageUpload = async (file) => {
+    const slug = generateSlug(form.name)
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${slug}-${Date.now()}.${fileExt}`
+    const filePath = `${fileName}`
+
+    const { error } = await supabase.storage
+      .from(SUPABASE_BUCKET)
+      .upload(filePath, file)
+
+    if (error) {
+      alert('Upload gagal')
+      return
+    }
+
+    const { data } = supabase.storage
+      .from(SUPABASE_BUCKET)
+      .getPublicUrl(filePath)
+
+    setForm(prev => ({
+      ...prev,
+      image_url: data.publicUrl,
+      image_path: filePath
+    }))
+
+    setPreview(data.publicUrl)
+  }
 
   // ================= CREATE / UPDATE =================
   const handleSubmit = async (e) => {
@@ -93,39 +136,28 @@ export default function SubKategoriPage() {
       fetchAll()
       closeModal()
     } else {
-      alert('Gagal menyimpan sub kategori')
+      alert('Gagal menyimpan')
     }
 
     setSubmitting(false)
   }
 
-  // ================= DELETE =================
   const handleDelete = async () => {
     setSubmitting(true)
 
-    const res = await fetch(
-      `${API}/api/v1/admin/subcategories/${selected.id}`,
-      {
-        method: 'DELETE',
-        headers: authHeaders()
-      }
-    )
+    await fetch(`${API}/api/v1/admin/subcategories/${selected.id}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    })
 
-    const json = await res.json()
-
-    if (json.success) {
-      fetchAll()
-      closeModal()
-    } else {
-      alert('Gagal menghapus sub kategori')
-    }
-
+    fetchAll()
+    closeModal()
     setSubmitting(false)
   }
 
-  // ================= MODAL =================
   const openCreate = () => {
     setMode('create')
+    setPreview(null)
     setForm({
       category_id: '',
       name: '',
@@ -142,6 +174,7 @@ export default function SubKategoriPage() {
   const openEdit = (item) => {
     setMode('edit')
     setSelected(item)
+    setPreview(item.image_url)
     setForm({
       category_id: item.category_id,
       name: item.name,
@@ -155,206 +188,125 @@ export default function SubKategoriPage() {
     setShowModal(true)
   }
 
-  const openDelete = (item) => {
-    setMode('delete')
-    setSelected(item)
-    setShowModal(true)
-  }
-
   const closeModal = () => {
     setShowModal(false)
     setSelected(null)
     setMode('create')
   }
 
-  // ================= UI =================
   return (
     <div className="space-y-6">
+
       <h1 className="text-3xl font-bold text-white">
         Manajemen Sub Kategori
       </h1>
 
-      <motion.div
-        className="rounded-2xl border border-purple-600/60 bg-black p-6 shadow-[0_0_25px_rgba(168,85,247,0.15)]"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
+      <motion.div className="rounded-2xl border border-purple-600/60 bg-black p-6">
         <div className="flex justify-end mb-4">
           <button className="btn-add" onClick={openCreate}>
             + Tambah
           </button>
         </div>
 
-        {loading ? (
-          <p className="text-purple-300">Loading...</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-gray-300">
-              <thead>
-                <tr className="border-b border-white/10">
-                  <th>ID</th>
-                  <th>Logo</th>
-                  <th>Nama</th>
-                  <th>Kategori</th>
-                  <th>Provider</th>
-                  <th>Status</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
+        <table className="w-full text-sm text-gray-300">
+          <thead>
+            <tr className="border-b border-white/10">
+              <th>ID</th>
+              <th>Logo</th>
+              <th>Nama</th>
+              <th>Kategori</th>
+              <th>Provider</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
 
-              <tbody>
-                {items.map(item => (
-                  <tr key={item.id} className="border-b border-white/5 hover:bg-purple-900/20">
-                    <td>{item.id}</td>
-
-                    <td>
-                      <div className="w-12 h-12 relative">
-                        {item.image_url && (
-                          <Image
-                            src={item.image_url}
-                            alt={item.name}
-                            fill
-                            className="object-contain rounded"
-                          />
-                        )}
-                      </div>
-                    </td>
-
-                    <td className="text-white">{item.name}</td>
-                    <td>{item.category?.name || '-'}</td>
-                    <td>{item.provider}</td>
-
-                    <td>
-                      <span className={item.is_active ? 'badge-ready' : 'badge-danger'}>
-                        {item.is_active ? 'Aktif' : 'Nonaktif'}
-                      </span>
-                    </td>
-
-                    <td className="space-x-2">
-                      <button className="btn-edit-sm" onClick={() => openEdit(item)}>
-                        Edit
-                      </button>
-                      <button className="btn-delete-sm" onClick={() => openDelete(item)}>
-                        Hapus
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-
-                {items.length === 0 && (
-                  <tr>
-                    <td colSpan="7" className="text-center py-6 text-purple-300">
-                      Data kosong
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+          <tbody>
+            {items.map(item => (
+              <tr key={item.id}>
+                <td>{item.id}</td>
+                <td>
+                  {item.image_url && (
+                    <Image src={item.image_url} width={40} height={40} alt="" />
+                  )}
+                </td>
+                <td>{item.name}</td>
+                <td>{item.category?.name}</td>
+                <td>{item.provider}</td>
+                <td className="space-x-2">
+                  <button onClick={() => openEdit(item)} className="btn-edit-sm">Edit</button>
+                  <button onClick={() => setSelected(item)} className="btn-delete-sm">Hapus</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </motion.div>
 
-      {/* ================= MODAL ================= */}
+      {/* MODAL */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-          <div className="w-full max-w-md rounded-2xl border border-purple-600/60 bg-black p-6">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center">
+          <div className="w-full max-w-md bg-black p-6 rounded-2xl border border-purple-600/60">
 
-            {mode === 'delete' ? (
-              <>
-                <h3 className="text-xl font-semibold text-white mb-4">
-                  Hapus Sub Kategori
-                </h3>
-                <p className="text-gray-300 mb-6">
-                  Yakin ingin menghapus <b>{selected?.name}</b>?
-                </p>
+            <form onSubmit={handleSubmit}>
+              <select
+                className="input-primary mb-3"
+                value={form.category_id}
+                onChange={e => setForm({ ...form, category_id: e.target.value })}
+                required
+              >
+                <option value="">Pilih kategori</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
 
-                <div className="flex justify-end gap-2">
-                  <button className="btn-cancel" onClick={closeModal}>
-                    Batal
-                  </button>
-                  <button
-                    className="btn-delete-sm"
-                    onClick={handleDelete}
-                    disabled={submitting}
-                  >
-                    {submitting ? 'Menghapus...' : 'Hapus'}
-                  </button>
+              <input
+                className="input-primary mb-3"
+                placeholder="Nama"
+                value={form.name}
+                onChange={e => {
+                  const name = e.target.value
+                  setForm({
+                    ...form,
+                    name,
+                    slug: generateSlug(name)
+                  })
+                }}
+                required
+              />
+
+              <input
+                className="input-primary mb-3"
+                placeholder="Slug"
+                value={form.slug}
+                readOnly
+              />
+
+              <input
+                className="input-primary mb-3"
+                placeholder="Provider"
+                value={form.provider}
+                onChange={e => setForm({ ...form, provider: e.target.value })}
+              />
+
+              <input
+                type="file"
+                className="mb-3"
+                accept="image/*"
+                onChange={e => handleImageUpload(e.target.files[0])}
+              />
+
+              {preview && (
+                <div className="mb-3">
+                  <Image src={preview} width={80} height={80} alt="preview" />
                 </div>
-              </>
-            ) : (
-              <form onSubmit={handleSubmit}>
-                <h3 className="text-xl font-semibold text-white mb-4">
-                  {mode === 'edit' ? 'Edit' : 'Tambah'} Sub Kategori
-                </h3>
+              )}
 
-                <select
-                  className="input-primary mb-3"
-                  value={form.category_id}
-                  onChange={e => setForm({ ...form, category_id: e.target.value })}
-                  required
-                >
-                  <option value="">Pilih kategori</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
+              <button className="btn-add w-full" disabled={submitting}>
+                {submitting ? 'Menyimpan...' : 'Simpan'}
+              </button>
 
-                <input className="input-primary mb-3" placeholder="Nama"
-                  value={form.name}
-                  onChange={e => setForm({ ...form, name: e.target.value })}
-                  required
-                />
-
-                <input className="input-primary mb-3" placeholder="Slug"
-                  value={form.slug}
-                  onChange={e => setForm({ ...form, slug: e.target.value })}
-                  required
-                />
-
-                <input className="input-primary mb-3" placeholder="Provider"
-                  value={form.provider}
-                  onChange={e => setForm({ ...form, provider: e.target.value })}
-                />
-
-                <input className="input-primary mb-3" placeholder="Image URL"
-                  value={form.image_url}
-                  onChange={e => setForm({ ...form, image_url: e.target.value })}
-                  required
-                />
-
-                <input className="input-primary mb-3" placeholder="Image Path"
-                  value={form.image_path}
-                  onChange={e => setForm({ ...form, image_path: e.target.value })}
-                  required
-                />
-
-                <input type="number" className="input-primary mb-3"
-                  placeholder="Sort Order"
-                  value={form.sort_order}
-                  onChange={e => setForm({ ...form, sort_order: e.target.value })}
-                />
-
-                <label className="flex items-center gap-2 text-sm text-purple-300 mb-4">
-                  <input
-                    type="checkbox"
-                    checked={form.is_active}
-                    onChange={e => setForm({ ...form, is_active: e.target.checked })}
-                  />
-                  Aktif
-                </label>
-
-                <div className="flex justify-end gap-2">
-                  <button type="button" className="btn-cancel" onClick={closeModal}>
-                    Batal
-                  </button>
-                  <button type="submit" className="btn-add" disabled={submitting}>
-                    {submitting ? 'Menyimpan...' : 'Simpan'}
-                  </button>
-                </div>
-              </form>
-            )}
+            </form>
 
           </div>
         </div>
