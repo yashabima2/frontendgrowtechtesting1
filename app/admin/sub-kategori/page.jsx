@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Cookies from 'js-cookie'
 import { motion } from "framer-motion";
 import { authFetch } from "../../lib/authFetch";
-
+import { X } from "lucide-react";
 // import { supabase } from '../../lib/supabaseClient'
 
 const API = process.env.NEXT_PUBLIC_API_URL
@@ -368,7 +368,16 @@ export default function SubKategoriPage() {
       {/* MODAL */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center">
-          <div className="w-full max-w-md bg-black p-6 rounded-2xl border border-purple-600/60">
+          <div className="relative w-full max-w-md bg-black p-6 rounded-2xl border border-purple-600/60">
+
+            <button
+              type="button"
+              onClick={closeModal}
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center 
+                        rounded-full bg-white/10 hover:bg-purple-600 transition text-white"
+            >
+              <X size={18} />
+            </button>
 
             <form onSubmit={handleSubmit}>
               <select
