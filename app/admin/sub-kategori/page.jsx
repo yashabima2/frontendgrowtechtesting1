@@ -119,7 +119,6 @@ export default function SubKategoriPage() {
 
   // ================= HANDLE IMAGE UPLOAD =================
   const handleImageUpload = async (file) => {
-
     if (!file) return
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
@@ -138,69 +137,72 @@ export default function SubKategoriPage() {
     setUploading(true)
     setProgress(0)
 
-    const token = Cookies.get('token')
+    try {
+      const token = Cookies.get('token')
 
-    const slug = generateSlug(form.name || 'logo')
-    const fileName = `${slug}-${Date.now()}.jpg`
+      // compress → tetap ikut mime hasil compress
+      const compressedFile = await compressImage(file)
 
-    const compressedFile = await compressImage(file)
+      // ✅ SIGN: kirim mime
+      const signRes = await fetch(`${API}/api/v1/admin/subcategories/logo/sign`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          mime: compressedFile.type, // ✅ WAJIB
+        }),
+      })
 
-    const signRes = await authFetch(
-      "/api/v1/admin/subcategories/logo/sign",
-      {
-        method: "POST",
-        body: JSON.stringify({ filename: fileName }),
+      const signJson = await signRes.json()
+
+      if (!signRes.ok || !signJson.success) {
+        console.log('SIGN ERROR:', signJson)
+        alert(signJson?.error?.message || 'Gagal generate signed URL')
+        return
       }
-    );
 
-    const signJson = await signRes.json()
+      const { signedUrl, path, publicUrl } = signJson.data
 
-    if (!signJson.success) {
-      alert('Gagal generate signed URL')
-      setUploading(false)
-      return
-    }
+      // ✅ UPLOAD: PUT ke signedUrl (bukan ke public url)
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open('PUT', signedUrl)
 
-    const { signedUrl, path, publicUrl } = signJson.data
-
-    await new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest()
-      xhr.open('PUT', signedUrl)
-
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const percent = Math.round((event.loaded / event.total) * 100)
-          setProgress(percent)
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            setProgress(Math.round((event.loaded / event.total) * 100))
+          }
         }
-      }
 
-      xhr.onload = () => {
-        if (xhr.status === 200) resolve()
-        else reject()
-      }
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) resolve()
+          else reject(new Error(`Upload failed: ${xhr.status} ${xhr.responseText}`))
+        }
 
-      xhr.onerror = reject
+        xhr.onerror = () => reject(new Error('Network error during upload'))
 
-      xhr.setRequestHeader('Content-Type', 'image/jpeg')
-      xhr.send(compressedFile)
-    })
+        xhr.setRequestHeader('Content-Type', compressedFile.type)
+        xhr.send(compressedFile)
+      })
 
-    setForm(prev => ({
-      ...prev,
-      image_url: publicUrl,
-      image_path: path
-    }))
+      // ✅ SIMPAN KE FORM
+      setForm(prev => ({
+        ...prev,
+        image_url: publicUrl,
+        image_path: path
+      }))
 
-    setPreview(publicUrl)
-    setUploading(false)
-  }
-
-  useEffect(() => {
-    const token = Cookies.get("token");
-    if (!token) {
-      window.location.href = "/login";
+      setPreview(publicUrl)
+    } catch (err) {
+      console.error(err)
+      alert(err?.message || 'Upload error')
+    } finally {
+      setUploading(false)
     }
-  }, []);
+  }
 
 
   // ================= CREATE / UPDATE =================
