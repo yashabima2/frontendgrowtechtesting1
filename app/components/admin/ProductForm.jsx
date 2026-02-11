@@ -21,6 +21,7 @@ export default function ProductForm({ mode, id }) {
     description: "",
     member_price: "",
     reseller_price: "",
+    vip_price: "",
     is_active: true,
     is_published: false,
   });
@@ -59,6 +60,7 @@ export default function ProductForm({ mode, id }) {
         description: data.description,
         member_price: data.tier_pricing.member,
         reseller_price: data.tier_pricing.reseller,
+        vip_price: data.tier_pricing.vip,
         is_active: data.is_active,
         is_published: data.is_published,
       });
@@ -87,6 +89,7 @@ export default function ProductForm({ mode, id }) {
       tier_pricing: {
         member: Number(form.member_price),
         reseller: Number(form.reseller_price),
+        vip: Number(form.vip_price),
       },
       is_active: form.is_active,
       is_published: form.is_published,
@@ -157,6 +160,14 @@ export default function ProductForm({ mode, id }) {
             name="reseller_price"
             placeholder="Harga Reseller"
             value={form.reseller_price}
+            onChange={handleChange}
+            className="input"
+          />
+          <input
+            type="number"
+            name="vip_price"
+            placeholder="Harga VIP"
+            value={form.vip_price}
             onChange={handleChange}
             className="input"
           />

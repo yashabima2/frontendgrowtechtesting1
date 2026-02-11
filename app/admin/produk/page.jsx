@@ -37,12 +37,9 @@ export default function ProdukPage() {
   };
 
   useEffect(() => {
-    loadProducts(1);
-  }, [search]);
+    loadProducts(page);
+  }, [search, page]);
 
-  useEffect(() => {
-    loadProducts();
-  }, [page]);
 
   // ================= DELETE =================
   const handleDelete = async (id) => {
@@ -115,10 +112,11 @@ export default function ProdukPage() {
         <table className="w-full text-sm text-gray-300">
           <thead>
             <tr className="border-b border-white/10">
-              <th className="py-3 text-left">Nama</th>
-              <th className="py-3 text-left">Durasi</th>
-              <th className="py-3 text-left">Harga Member</th>
-              <th className="py-3 text-left">Harga Reseller</th>
+              <th className="py-3 text-center">Nama</th>
+              <th className="py-3 text-center">Durasi</th>
+              <th className="py-3 text-center">Harga Member</th>
+              <th className="py-3 text-center">Harga Reseller</th>
+              <th className="py-3 text-center">Harga VIP</th>
               <th className="py-3 text-center">Status</th>
               <th className="py-3 text-center">Aksi</th>
             </tr>
@@ -143,19 +141,23 @@ export default function ProdukPage() {
                 <tr key={p.id} className="border-b border-white/5">
 
                   <td className="py-3 text-white">
-                    {p.name}
+                    {p.name} 
                   </td>
 
                   <td className="py-3">
-                    {p.duration_days} hari
+                    {p.duration_days} hari 
                   </td>
 
                   <td className="py-3">
-                    Rp {p.tier_pricing?.member?.toLocaleString()}
+                    Rp {p.tier_pricing?.member?.toLocaleString() || "-"}
                   </td>
 
                   <td className="py-3">
-                    Rp {p.tier_pricing?.reseller?.toLocaleString()}
+                    Rp {p.tier_pricing?.reseller?.toLocaleString() || "-"}
+                  </td>
+
+                  <td>
+                    Rp {p.tier_pricing?.vip?.toLocaleString() || "-"}
                   </td>
 
                   <td className="py-3 text-center">
