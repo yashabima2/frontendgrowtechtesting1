@@ -13,7 +13,7 @@ export default function SubKategoriPage() {
   const [loading, setLoading] = useState(true)
 
   const [showModal, setShowModal] = useState(false)
-  const [mode, setMode] = useState('create') // create | edit | delete
+  const [mode, setMode] = useState('create')
   const [selected, setSelected] = useState(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -22,6 +22,8 @@ export default function SubKategoriPage() {
     name: '',
     slug: '',
     provider: '',
+    image_url: '',
+    image_path: '',
     is_active: true,
     sort_order: 1
   })
@@ -35,33 +37,17 @@ export default function SubKategoriPage() {
     }
   }
 
-
   // ================= FETCH =================
   const fetchAll = async () => {
     setLoading(true)
 
     const [subRes, catRes] = await Promise.all([
-      fetch(`${API}/api/v1/admin/subcategories`, {
-        headers: authHeaders()
-      }),
-      fetch(`${API}/api/v1/admin/categories`, {
-        headers: authHeaders()
-      })
+      fetch(`${API}/api/v1/admin/subcategories`, { headers: authHeaders() }),
+      fetch(`${API}/api/v1/admin/categories`, { headers: authHeaders() })
     ])
 
-    const subText = await subRes.text()
-    const catText = await catRes.text()
-
-    let subJson, catJson
-    try {
-      subJson = JSON.parse(subText)
-      catJson = JSON.parse(catText)
-    } catch (e) {
-      console.error('Non JSON response:', subText, catText)
-      alert('Server error (cek backend)')
-      setLoading(false)
-      return
-    }
+    const subJson = await subRes.json()
+    const catJson = await catRes.json()
 
     setItems(subJson.data || [])
     setCategories(catJson.data || [])
@@ -84,23 +70,24 @@ export default function SubKategoriPage() {
 
     const method = mode === 'edit' ? 'PATCH' : 'POST'
 
+    const payload = {
+      category_id: Number(form.category_id),
+      name: form.name,
+      slug: form.slug,
+      provider: form.provider,
+      image_url: form.image_url,
+      image_path: form.image_path,
+      is_active: form.is_active,
+      sort_order: Number(form.sort_order)
+    }
+
     const res = await fetch(url, {
       method,
       headers: authHeaders(),
-      body: JSON.stringify(form)
+      body: JSON.stringify(payload)
     })
 
-    const text = await res.text()
-    let json
-
-    try {
-      json = JSON.parse(text)
-    } catch {
-      console.error(text)
-      alert('Server error (response bukan JSON)')
-      setSubmitting(false)
-      return
-    }
+    const json = await res.json()
 
     if (json.success) {
       fetchAll()
@@ -124,17 +111,7 @@ export default function SubKategoriPage() {
       }
     )
 
-    const text = await res.text()
-    let json
-
-    try {
-      json = JSON.parse(text)
-    } catch {
-      console.error(text)
-      alert('Server error')
-      setSubmitting(false)
-      return
-    }
+    const json = await res.json()
 
     if (json.success) {
       fetchAll()
@@ -146,7 +123,7 @@ export default function SubKategoriPage() {
     setSubmitting(false)
   }
 
-  // ================= MODAL HELPERS =================
+  // ================= MODAL =================
   const openCreate = () => {
     setMode('create')
     setForm({
@@ -154,6 +131,8 @@ export default function SubKategoriPage() {
       name: '',
       slug: '',
       provider: '',
+      image_url: '',
+      image_path: '',
       is_active: true,
       sort_order: 1
     })
@@ -168,6 +147,8 @@ export default function SubKategoriPage() {
       name: item.name,
       slug: item.slug,
       provider: item.provider,
+      image_url: item.image_url,
+      image_path: item.image_path,
       is_active: item.is_active,
       sort_order: item.sort_order
     })
@@ -190,28 +171,14 @@ export default function SubKategoriPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-white">
-        Manajemen Produk
+        Manajemen Sub Kategori
       </h1>
 
       <motion.div
-        className="
-          rounded-2xl
-          border border-purple-600/60
-          bg-black
-          p-6
-          transition-all duration-300
-          shadow-[0_0_25px_rgba(168,85,247,0.15)]
-          hover:shadow-[0_0_45px_rgba(168,85,247,0.35)]
-          hover:border-purple-500
-        "
+        className="rounded-2xl border border-purple-600/60 bg-black p-6 shadow-[0_0_25px_rgba(168,85,247,0.15)]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.1 }}
       >
-        <h2 className="text-lg font-semibold text-white mb-4">
-          Data Sub Kategori
-        </h2>
-
         <div className="flex justify-end mb-4">
           <button className="btn-add" onClick={openCreate}>
             + Tambah
@@ -226,8 +193,8 @@ export default function SubKategoriPage() {
               <thead>
                 <tr className="border-b border-white/10">
                   <th>ID</th>
-                  <th>Gambar</th>
-                  <th>Sub Kategori</th>
+                  <th>Logo</th>
+                  <th>Nama</th>
                   <th>Kategori</th>
                   <th>Provider</th>
                   <th>Status</th>
@@ -237,46 +204,37 @@ export default function SubKategoriPage() {
 
               <tbody>
                 {items.map(item => (
-                  <tr
-                    key={item.id}
-                    className="border-b border-white/5 hover:bg-purple-900/20"
-                  >
+                  <tr key={item.id} className="border-b border-white/5 hover:bg-purple-900/20">
                     <td>{item.id}</td>
 
                     <td>
-                      <div className="w-12 h-12 rounded bg-purple-900/40 flex items-center justify-center">
-                        <Image
-                          src="/placeholder.png"
-                          alt="Sub kategori"
-                          width={32}
-                          height={32}
-                        />
+                      <div className="w-12 h-12 relative">
+                        {item.image_url && (
+                          <Image
+                            src={item.image_url}
+                            alt={item.name}
+                            fill
+                            className="object-contain rounded"
+                          />
+                        )}
                       </div>
                     </td>
 
                     <td className="text-white">{item.name}</td>
-                    <td className="text-purple-300">
-                      {item.category?.name || '-'}
-                    </td>
+                    <td>{item.category?.name || '-'}</td>
                     <td>{item.provider}</td>
 
-                    <td className="text-center">
+                    <td>
                       <span className={item.is_active ? 'badge-ready' : 'badge-danger'}>
                         {item.is_active ? 'Aktif' : 'Nonaktif'}
                       </span>
                     </td>
 
-                    <td className="text-center space-x-2">
-                      <button
-                        className="btn-edit-sm"
-                        onClick={() => openEdit(item)}
-                      >
+                    <td className="space-x-2">
+                      <button className="btn-edit-sm" onClick={() => openEdit(item)}>
                         Edit
                       </button>
-                      <button
-                        className="btn-delete-sm"
-                        onClick={() => openDelete(item)}
-                      >
+                      <button className="btn-delete-sm" onClick={() => openDelete(item)}>
                         Hapus
                       </button>
                     </td>
@@ -300,6 +258,7 @@ export default function SubKategoriPage() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
           <div className="w-full max-w-md rounded-2xl border border-purple-600/60 bg-black p-6">
+
             {mode === 'delete' ? (
               <>
                 <h3 className="text-xl font-semibold text-white mb-4">
@@ -328,13 +287,10 @@ export default function SubKategoriPage() {
                   {mode === 'edit' ? 'Edit' : 'Tambah'} Sub Kategori
                 </h3>
 
-                {/* CATEGORY */}
                 <select
                   className="input-primary mb-3"
                   value={form.category_id}
-                  onChange={e =>
-                    setForm({ ...form, category_id: e.target.value })
-                  }
+                  onChange={e => setForm({ ...form, category_id: e.target.value })}
                   required
                 >
                   <option value="">Pilih kategori</option>
@@ -345,64 +301,61 @@ export default function SubKategoriPage() {
                   ))}
                 </select>
 
-                <input
-                  className="input-primary mb-3"
-                  placeholder="Nama sub kategori"
+                <input className="input-primary mb-3" placeholder="Nama"
                   value={form.name}
-                  onChange={e =>
-                    setForm({ ...form, name: e.target.value })
-                  }
+                  onChange={e => setForm({ ...form, name: e.target.value })}
                   required
                 />
 
-                <input
-                  className="input-primary mb-3"
-                  placeholder="Slug"
+                <input className="input-primary mb-3" placeholder="Slug"
                   value={form.slug}
-                  onChange={e =>
-                    setForm({ ...form, slug: e.target.value })
-                  }
+                  onChange={e => setForm({ ...form, slug: e.target.value })}
                   required
                 />
 
-                <input
-                  className="input-primary mb-3"
-                  placeholder="Provider"
+                <input className="input-primary mb-3" placeholder="Provider"
                   value={form.provider}
-                  onChange={e =>
-                    setForm({ ...form, provider: e.target.value })
-                  }
+                  onChange={e => setForm({ ...form, provider: e.target.value })}
+                />
+
+                <input className="input-primary mb-3" placeholder="Image URL"
+                  value={form.image_url}
+                  onChange={e => setForm({ ...form, image_url: e.target.value })}
+                  required
+                />
+
+                <input className="input-primary mb-3" placeholder="Image Path"
+                  value={form.image_path}
+                  onChange={e => setForm({ ...form, image_path: e.target.value })}
+                  required
+                />
+
+                <input type="number" className="input-primary mb-3"
+                  placeholder="Sort Order"
+                  value={form.sort_order}
+                  onChange={e => setForm({ ...form, sort_order: e.target.value })}
                 />
 
                 <label className="flex items-center gap-2 text-sm text-purple-300 mb-4">
                   <input
                     type="checkbox"
                     checked={form.is_active}
-                    onChange={e =>
-                      setForm({ ...form, is_active: e.target.checked })
-                    }
+                    onChange={e => setForm({ ...form, is_active: e.target.checked })}
                   />
                   Aktif
                 </label>
 
                 <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    className="btn-cancel"
-                    onClick={closeModal}
-                  >
+                  <button type="button" className="btn-cancel" onClick={closeModal}>
                     Batal
                   </button>
-                  <button
-                    type="submit"
-                    className="btn-add"
-                    disabled={submitting}
-                  >
+                  <button type="submit" className="btn-add" disabled={submitting}>
                     {submitting ? 'Menyimpan...' : 'Simpan'}
                   </button>
                 </div>
               </form>
             )}
+
           </div>
         </div>
       )}

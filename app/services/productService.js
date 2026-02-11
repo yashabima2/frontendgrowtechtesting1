@@ -1,4 +1,4 @@
-import { getToken } from "@/utils/auth";
+import { getToken } from "../utils/auth";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
