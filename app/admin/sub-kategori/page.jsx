@@ -114,9 +114,8 @@ export default function SubKategoriPage() {
 
     if (!file) return
 
-    // ================= VALIDATION =================
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
-    const maxSize = 2 * 1024 * 1024 // 2MB
+    const maxSize = 2 * 1024 * 1024
 
     if (!allowedTypes.includes(file.type)) {
       alert('Format harus JPG, PNG, atau WEBP')
@@ -134,13 +133,10 @@ export default function SubKategoriPage() {
     const token = Cookies.get('token')
 
     const slug = generateSlug(form.name || 'logo')
-    const fileExt = 'jpg'
-    const fileName = `${slug}-${Date.now()}.${fileExt}`
+    const fileName = `${slug}-${Date.now()}.jpg`
 
-    // ================= COMPRESS =================
     const compressedFile = await compressImage(file)
 
-    // ================= SIGN REQUEST =================
     const signRes = await fetch(
       `${API}/api/v1/admin/subcategories/logo/sign`,
       {
@@ -165,7 +161,6 @@ export default function SubKategoriPage() {
 
     const { signedUrl, path, publicUrl } = signJson.data
 
-    // ================= UPLOAD WITH PROGRESS =================
     await new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest()
       xhr.open('PUT', signedUrl)
@@ -188,24 +183,6 @@ export default function SubKategoriPage() {
       xhr.send(compressedFile)
     })
 
-    // ================= AUTO DELETE OLD IMAGE =================
-    if (mode === 'edit' && form.image_path) {
-      await fetch(
-        `${API}/api/v1/admin/subcategories/logo/delete`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            path: form.image_path
-          })
-        }
-      )
-    }
-
-    // ================= UPDATE FORM =================
     setForm(prev => ({
       ...prev,
       image_url: publicUrl,
@@ -213,9 +190,9 @@ export default function SubKategoriPage() {
     }))
 
     setPreview(publicUrl)
-
     setUploading(false)
   }
+
 
   // ================= CREATE / UPDATE =================
   const handleSubmit = async (e) => {
