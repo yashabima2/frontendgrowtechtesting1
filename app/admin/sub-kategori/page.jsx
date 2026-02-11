@@ -220,16 +220,28 @@ export default function SubKategoriPage() {
     const res = await authFetch(endpoint, {
       method,
       body: JSON.stringify({
-        category_id: Number(form.category_id),
+        category_id: parseInt(form.category_id),
         name: form.name,
         slug: form.slug,
-        provider: form.provider,
-        image_url: form.image_url,
-        image_path: form.image_path,
+        provider: form.provider || null,
+        image_url: form.image_url || null,
+        image_path: form.image_path || null,
         is_active: form.is_active,
-        sort_order: Number(form.sort_order),
+        sort_order: parseInt(form.sort_order) || 0,
       }),
     });
+
+    console.log({
+      category_id: Number(form.category_id),
+      name: form.name,
+      slug: form.slug,
+      provider: form.provider,
+      image_url: form.image_url,
+      image_path: form.image_path,
+      is_active: form.is_active,
+      sort_order: Number(form.sort_order),
+    })
+
 
     const json = await res.json();
 
