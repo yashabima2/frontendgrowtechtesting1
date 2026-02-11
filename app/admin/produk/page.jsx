@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { productService } from "@/services/productService";
+import { productService } from "../../services/productService";
 
 export default function ProdukPage() {
 
