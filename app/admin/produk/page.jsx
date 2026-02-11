@@ -70,9 +70,15 @@ export default function ProdukPage() {
 
   return (
     <motion.div
-      className="space-y-8"
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+      className="
+        rounded-2xl
+        border border-purple-600/60
+         bg-black
+        p-6
+        shadow-[0_0_25px_rgba(168,85,247,0.15)]
+      "
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
     >
 
       {/* HEADER */}

@@ -201,7 +201,17 @@ export default function SubKategoriPage() {
         Manajemen Sub Kategori
       </h1>
 
-      <motion.div className="rounded-2xl border border-purple-600/60 bg-black p-6">
+      <motion.div
+        className="
+          rounded-2xl
+          border border-purple-600/60
+          bg-black
+          p-6
+          shadow-[0_0_25px_rgba(168,85,247,0.15)]
+        "
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
         <div className="flex justify-end mb-4">
           <button className="btn-add" onClick={openCreate}>
             + Tambah
