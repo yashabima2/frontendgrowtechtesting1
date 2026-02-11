@@ -9,7 +9,6 @@ const API = process.env.NEXT_PUBLIC_API_URL;
 export default function ProductForm({ mode, id }) {
   const router = useRouter();
 
-  const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -36,18 +35,12 @@ export default function ProductForm({ mode, id }) {
     };
   };
 
-  // ================= FETCH SUBCATEGORY =================
-  const fetchSubcategories = async (categoryId) => {
-    if (!categoryId) {
-      setSubcategories([]);
-      return;
-    }
-
+  // ================= FETCH SUBCATEGORIES =================
+  const fetchSubcategories = async () => {
     try {
-      const res = await fetch(
-        `${API}/api/v1/admin/subcategories?category_id=${categoryId}`,
-        { headers: authHeaders() }
-      );
+      const res = await fetch(`${API}/api/v1/admin/subcategories`, {
+        headers: authHeaders(),
+      });
 
       const json = await res.json();
       setSubcategories(json.data || []);
@@ -57,57 +50,49 @@ export default function ProductForm({ mode, id }) {
     }
   };
 
-  // ================= FETCH INITIAL =================
-  const fetchInitial = async () => {
-    setLoading(true);
+  // ================= FETCH PRODUCT (EDIT MODE) =================
+  const fetchProduct = async () => {
+    if (mode !== "edit" || !id) return;
 
     try {
-      // categories
-      const catRes = await fetch(`${API}/api/v1/admin/categories`, {
+      const res = await fetch(`${API}/api/v1/admin/products/${id}`, {
         headers: authHeaders(),
       });
-      const catJson = await catRes.json();
-      const catData = catJson.data || [];
-      setCategories(catData);
 
-      // edit mode
-      if (mode === "edit" && id) {
-        const res = await fetch(`${API}/api/v1/admin/products/${id}`, {
-          headers: authHeaders(),
-        });
+      const json = await res.json();
+      const data = json.data;
 
-        const json = await res.json();
-        const data = json.data;
+      if (!data) throw new Error("Produk tidak ditemukan");
 
-        if (!data) throw new Error("Produk tidak ditemukan");
-
-        // load subcategory sesuai category produk
-        await fetchSubcategories(data.category_id);
-
-        setForm({
-          category_id: data.category_id,
-          subcategory_id: data.subcategory_id,
-          name: data.name,
-          type: data.type,
-          duration_days: data.duration_days,
-          description: data.description,
-          member_price: data.tier_pricing?.member ?? "",
-          reseller_price: data.tier_pricing?.reseller ?? "",
-          vip_price: data.tier_pricing?.vip ?? "",
-          is_active: data.is_active,
-          is_published: data.is_published,
-        });
-      }
+      setForm({
+        category_id: data.category_id,
+        subcategory_id: data.subcategory_id,
+        name: data.name,
+        type: data.type,
+        duration_days: data.duration_days,
+        description: data.description,
+        member_price: data.tier_pricing?.member ?? "",
+        reseller_price: data.tier_pricing?.reseller ?? "",
+        vip_price: data.tier_pricing?.vip ?? "",
+        is_active: data.is_active,
+        is_published: data.is_published,
+      });
     } catch (err) {
       console.error(err);
-      alert(err.message || "Gagal load data");
-    } finally {
-      setLoading(false);
+      alert(err.message || "Gagal load produk");
     }
   };
 
+  // ================= INITIAL LOAD =================
   useEffect(() => {
-    fetchInitial();
+    const init = async () => {
+      setLoading(true);
+      await fetchSubcategories();
+      await fetchProduct();
+      setLoading(false);
+    };
+
+    init();
   }, []);
 
   // ================= HANDLE CHANGE =================
@@ -115,15 +100,25 @@ export default function ProductForm({ mode, id }) {
     const { name, value, type, checked } = e.target;
     const newValue = type === "checkbox" ? checked : value;
 
+    // kalau subcategory berubah → update category otomatis
+    if (name === "subcategory_id") {
+      const selectedSub = subcategories.find(
+        (sub) => sub.id === Number(value)
+      );
+
+      setForm((prev) => ({
+        ...prev,
+        subcategory_id: value,
+        category_id: selectedSub?.category_id ?? "",
+      }));
+
+      return;
+    }
+
     setForm((prev) => ({
       ...prev,
       [name]: newValue,
-      ...(name === "category_id" && { subcategory_id: "" }),
     }));
-
-    if (name === "category_id") {
-      fetchSubcategories(value);
-    }
   };
 
   // ================= SUBMIT =================
@@ -186,30 +181,13 @@ export default function ProductForm({ mode, id }) {
 
       <form onSubmit={handleSubmit} className="space-y-4">
 
-        {/* CATEGORY */}
-        <select
-          name="category_id"
-          value={form.category_id}
-          onChange={handleChange}
-          className="input"
-          required
-        >
-          <option value="">Pilih Kategori</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
-
-        {/* SUBCATEGORY */}
+        {/* SUBCATEGORY ONLY */}
         <select
           name="subcategory_id"
           value={form.subcategory_id}
           onChange={handleChange}
           className="input"
           required
-          disabled={!form.category_id}
         >
           <option value="">Pilih Subkategori</option>
           {subcategories.map((sub) => (
