@@ -1,6 +1,9 @@
 'use client'
 
 import { useEffect, useState } from "react";
+import Cookies from "js-cookie";
+
+const API = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ProductModal({
   open,
@@ -8,9 +11,13 @@ export default function ProductModal({
   onSubmit,
   initialData = null
 }) {
+
+  const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+
   const [form, setForm] = useState({
-    category_id: 1,
-    subcategory_id: 1,
+    category_id: "",
+    subcategory_id: "",
     name: "",
     type: "ACCOUNT_CREDENTIAL",
     duration_days: 7,
@@ -20,6 +27,44 @@ export default function ProductModal({
     is_active: true,
     is_published: false,
   });
+
+  const authHeaders = () => {
+    const token = Cookies.get("token");
+    return {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    };
+  };
+
+  // ================= FETCH CATEGORIES =================
+  const fetchCategories = async () => {
+    const res = await fetch(`${API}/api/v1/admin/categories`, {
+      headers: authHeaders(),
+    });
+    const json = await res.json();
+    setCategories(json.data || []);
+  };
+
+  const fetchSubcategories = async (categoryId) => {
+    if (!categoryId) return;
+
+    const res = await fetch(
+      `${API}/api/v1/admin/subcategories?category_id=${categoryId}`,
+      { headers: authHeaders() }
+    );
+    const json = await res.json();
+    setSubcategories(json.data || []);
+  };
+
+  useEffect(() => {
+    if (open) fetchCategories();
+  }, [open]);
+
+  useEffect(() => {
+    if (form.category_id) {
+      fetchSubcategories(form.category_id);
+    }
+  }, [form.category_id]);
 
   useEffect(() => {
     if (initialData) {
@@ -35,6 +80,8 @@ export default function ProductModal({
         is_active: initialData.is_active,
         is_published: initialData.is_published,
       });
+
+      fetchSubcategories(initialData.category_id);
     }
   }, [initialData]);
 
@@ -42,15 +89,18 @@ export default function ProductModal({
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm({ ...form, [name]: type === "checkbox" ? checked : value });
+    setForm({
+      ...form,
+      [name]: type === "checkbox" ? checked : value,
+    });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
     onSubmit({
-      category_id: form.category_id,
-      subcategory_id: form.subcategory_id,
+      category_id: Number(form.category_id),
+      subcategory_id: Number(form.subcategory_id),
       name: form.name,
       type: form.type,
       duration_days: Number(form.duration_days),
@@ -72,6 +122,39 @@ export default function ProductModal({
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-3">
+
+          {/* CATEGORY */}
+          <select
+            name="category_id"
+            value={form.category_id}
+            onChange={handleChange}
+            className="input"
+            required
+          >
+            <option value="">Pilih kategori</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+
+          {/* SUBCATEGORY */}
+          <select
+            name="subcategory_id"
+            value={form.subcategory_id}
+            onChange={handleChange}
+            className="input"
+            required
+          >
+            <option value="">Pilih sub kategori</option>
+            {subcategories.map((sub) => (
+              <option key={sub.id} value={sub.id}>
+                {sub.name}
+              </option>
+            ))}
+          </select>
+
           <input
             name="name"
             placeholder="Nama produk"
@@ -152,11 +235,7 @@ export default function ProductModal({
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn-secondary"
-            >
+            <button type="button" onClick={onClose} className="btn-secondary">
               Batal
             </button>
             <button type="submit" className="btn-add">

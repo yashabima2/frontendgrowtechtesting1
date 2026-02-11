@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Cookies from 'js-cookie'
 import { motion } from "framer-motion";
-import { supabase } from '@/lib/supabase'
+import { supabase } from '../../lib/supabaseClient'
 
 const API = process.env.NEXT_PUBLIC_API_URL
 const SUPABASE_BUCKET = 'subcategories'
