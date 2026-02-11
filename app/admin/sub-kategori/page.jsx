@@ -481,8 +481,8 @@ export default function SubKategoriPage() {
 
             </form>
 
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   )
