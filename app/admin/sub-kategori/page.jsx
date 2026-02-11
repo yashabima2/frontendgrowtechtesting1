@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Cookies from 'js-cookie'
 import { motion } from "framer-motion";
-import { supabase } from '../../lib/supabaseClient'
+// import { supabase } from '../../lib/supabaseClient'
 
 const API = process.env.NEXT_PUBLIC_API_URL
-const SUPABASE_BUCKET = 'subcategories'
+// const SUPABASE_BUCKET = 'subcategories'
 
 export default function SubKategoriPage() {
 
@@ -74,32 +74,63 @@ export default function SubKategoriPage() {
 
   // ================= HANDLE IMAGE UPLOAD =================
   const handleImageUpload = async (file) => {
-    const slug = generateSlug(form.name)
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${slug}-${Date.now()}.${fileExt}`
-    const filePath = `${fileName}`
 
-    const { error } = await supabase.storage
-      .from(SUPABASE_BUCKET)
-      .upload(filePath, file)
+    if (!file) return;
 
-    if (error) {
-      alert('Upload gagal')
-      return
+    const token = Cookies.get('token');
+
+    const slug = generateSlug(form.name || 'logo');
+    const ext = file.name.split('.').pop();
+    const fileName = `${slug}-${Date.now()}.${ext}`;
+
+    // 1️⃣ Minta signed URL ke backend
+    const signRes = await fetch(
+      `${API}/api/v1/admin/subcategories/logo/sign`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          filename: fileName
+        })
+      }
+    );
+
+    const signJson = await signRes.json();
+
+    if (!signJson.success) {
+      alert('Gagal generate signed URL');
+      return;
     }
 
-    const { data } = supabase.storage
-      .from(SUPABASE_BUCKET)
-      .getPublicUrl(filePath)
+    const { signedUrl, path, publicUrl } = signJson.data;
 
+    // 2️⃣ Upload ke Supabase pakai signed URL
+    const uploadRes = await fetch(signedUrl, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type
+      }
+    });
+
+    if (!uploadRes.ok) {
+      alert('Upload gagal');
+      return;
+    }
+
+    // 3️⃣ Set ke form
     setForm(prev => ({
       ...prev,
-      image_url: data.publicUrl,
-      image_path: filePath
-    }))
+      image_url: publicUrl,
+      image_path: path
+    }));
 
-    setPreview(data.publicUrl)
-  }
+    setPreview(publicUrl);
+  };
+
 
   // ================= CREATE / UPDATE =================
   const handleSubmit = async (e) => {
