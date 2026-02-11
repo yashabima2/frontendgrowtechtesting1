@@ -12,10 +12,13 @@ const authHeader = () => {
 
 export const productService = {
   // GET products
-  async getAll() {
-    const res = await fetch(`${API}/api/v1/admin/products`, {
+  async getAll(params = {}) {
+    const query = new URLSearchParams(params).toString();
+
+    const res = await fetch(`${API}/api/v1/admin/products?${query}`, {
       headers: authHeader(),
     });
+
     if (!res.ok) throw new Error("Gagal mengambil produk");
     return res.json();
   },
