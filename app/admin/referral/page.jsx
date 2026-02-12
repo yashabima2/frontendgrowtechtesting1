@@ -1,4 +1,5 @@
 import ReferralTabs from './components/ReferralTabs'
+import { motion } from 'framer-motion'
 
 export default function ReferralSettingsPage() {
   return (
