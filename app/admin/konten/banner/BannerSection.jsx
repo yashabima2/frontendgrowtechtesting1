@@ -273,15 +273,21 @@ export default function BannerSection() {
           </div>
 
           {/* SORT ORDER */}
-          <input
-            type="number"
-            className="input"
-            placeholder="Urutan tampil"
-            value={form.sort_order}
-            onChange={(e) =>
-              setForm({ ...form, sort_order: Number(e.target.value) })
-            }
-          />
+          <div>
+            <label className="text-sm text-purple-300 mb-1 block">
+              Urutan ke
+            </label>
+
+            <input
+              type="number"
+              className="input"
+              placeholder="Masukkan urutan tampil"
+              value={form.sort_order}
+              onChange={(e) =>
+                setForm({ ...form, sort_order: Number(e.target.value) })
+              }
+            />
+          </div>
 
           {/* STATUS */}
           <label className="flex gap-2 items-center">
