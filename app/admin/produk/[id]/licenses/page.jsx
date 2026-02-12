@@ -113,18 +113,20 @@ export default function LicensesPage() {
 
         console.log("DUPLICATE RESULT:", res);
 
-        const newCount = res.data?.new ?? res.new ?? 0;
-        const dupCount = res.data?.duplicate ?? res.duplicate ?? 0;
+        const total = res.data?.total_lines ?? 0;
+        const duplicates = res.data?.duplicates ?? 0;
+        const newItems = total - duplicates;
 
         showToast(
         "success",
-        `Baru: ${newCount}, Duplikat: ${dupCount}`
+        `Baru: ${newItems}, Duplikat: ${duplicates}`
         );
 
     } catch (err) {
         showToast("error", err.message);
     }
   };
+
 
 
   // ================= TAKE STOCK =================
