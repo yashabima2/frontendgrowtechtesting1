@@ -103,33 +103,46 @@ export default function LicensesPage() {
 
   // ================= CHECK DUPLICATES =================
   const handleCheckDuplicate = async () => {
-    if (!bulkText) {
-      showToast("error", "Isi bulk text dulu");
-      return;
+    if (!bulkText.trim()) {
+        showToast("error", "Isi bulk text dulu");
+        return;
     }
 
     try {
-      const res = await licenseService.checkDuplicates(id, bulkText);
+        const res = await licenseService.checkDuplicates(id, bulkText);
 
-      showToast(
+        console.log("DUPLICATE RESULT:", res);
+
+        const newCount = res.data?.new ?? res.new ?? 0;
+        const dupCount = res.data?.duplicate ?? res.duplicate ?? 0;
+
+        showToast(
         "success",
-        `Baru: ${res.data.new}, Duplikat: ${res.data.duplicate}`
-      );
+        `Baru: ${newCount}, Duplikat: ${dupCount}`
+        );
 
-    } catch {
-      showToast("error", "Gagal check duplicate");
+    } catch (err) {
+        showToast("error", err.message);
     }
   };
+
 
   // ================= TAKE STOCK =================
   const handleTakeStock = async () => {
     try {
+        if (qty > (summary?.available ?? 0)) {
+        showToast("error", "Qty melebihi stok available");
+        return;
+        }
+
         const res = await licenseService.takeStock(id, qty);
+
+        console.log("TAKE STOCK:", res);
 
         const licenses = res.data?.licenses || [];
 
         if (!licenses.length) {
-        showToast("error", "Tidak ada stock tersedia");
+        showToast("error", "Backend tidak mengembalikan license");
         return;
         }
 
@@ -144,13 +157,14 @@ export default function LicensesPage() {
         a.download = `licenses-product-${id}.txt`;
         a.click();
 
-        showToast("success", `Ambil ${qty} license`);
+        showToast("success", `Ambil ${licenses.length} license`);
         loadData();
 
     } catch (err) {
         showToast("error", err.message);
     }
   };
+
 
 
   const SkeletonRow = () => (
