@@ -40,10 +40,6 @@ export default function ManajemenPenggunaPage() {
     current_page: page,
   })
 
-
-  /* =========================
-     FETCH DATA (API READY)
-  ========================= */
   useEffect(() => {
     fetchData()
   }, [tab, page])
@@ -59,12 +55,11 @@ export default function ManajemenPenggunaPage() {
 
       console.log("FINAL RESPONSE:", res)
 
-      // ✅ ARRAY USER ADA DI SINI
+
       const users = Array.isArray(res?.data?.data)
         ? res.data.data
         : []
 
-      // ✅ FILTER ROLE SESUAI TAB
       const filteredUsers = users.filter(user =>
         tab === "admin"
           ? user.role === "admin"
@@ -73,7 +68,7 @@ export default function ManajemenPenggunaPage() {
 
       setData(filteredUsers)
 
-      // ✅ PAGINATION
+      //  PAGINATION
       setMeta({
         total: res.data.total,
         per_page: res.data.per_page,
@@ -88,10 +83,6 @@ export default function ManajemenPenggunaPage() {
     }
   }
 
-
-  /* =========================
-     ACTION HANDLERS
-  ========================= */
   function handleEdit() {
     if (!selectedId) return alert("Pilih data terlebih dahulu")
 
@@ -124,15 +115,6 @@ export default function ManajemenPenggunaPage() {
     }
   }
 
-
-  /* =========================
-     PAGINATION
-  ========================= */
-  // const totalData = 64 // dari API nanti
-
-  /* =========================
-     RENDER
-  ========================= */
   return (
     <div className="px-4 md:px-6 py-8 text-white">
 
@@ -162,7 +144,17 @@ export default function ManajemenPenggunaPage() {
       </div>
 
       <AnimatedSection keyValue={tab}>
-        <div className="rounded-2xl border border-purple-700 bg-black p-4 md:p-6">
+        <motion.div
+          className="
+            rounded-2xl
+            border border-purple-600/60
+            bg-black
+            p-6
+            shadow-[0_0_25px_rgba(168,85,247,0.15)]
+          "
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
 
           {/* TOOLBAR */}
           <div className="flex flex-wrap items-center gap-3 mb-6">
@@ -319,7 +311,7 @@ export default function ManajemenPenggunaPage() {
             limit={meta.per_page}
             onChange={setPage}
           />
-        </div>
+        </motion.div>
       </AnimatedSection>
 
       {/* =========================
