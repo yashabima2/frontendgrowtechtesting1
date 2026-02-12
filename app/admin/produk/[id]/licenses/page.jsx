@@ -133,27 +133,47 @@ export default function LicensesPage() {
   // ================= TAKE STOCK =================
   const handleTakeStock = async () => {
     try {
+        // ✅ Validasi qty
+        if (qty <= 0) {
+        showToast("error", "Qty harus lebih dari 0");
+        return;
+        }
+
         if (qty > (summary?.available ?? 0)) {
         showToast("error", "Qty melebihi stok available");
         return;
         }
 
+        // ✅ Call backend
         const res = await licenseService.takeStock(id, qty);
 
-        console.log("TAKE STOCK:", res);
+        console.log("TAKE STOCK RESPONSE:", res);
 
-        const licenses = res.data?.licenses || [];
+        // ✅ Handle berbagai kemungkinan struktur response backend
+        const licenses =
+        res?.data?.licenses ||
+        res?.data?.data?.licenses ||
+        [];
 
+        console.log("LICENSES RESULT:", licenses);
+
+        // ✅ Jika backend tidak kirim license list
         if (!licenses.length) {
-        showToast("error", res.data?.message || "Tidak ada license dikembalikan");
+        showToast(
+            "error",
+            res?.data?.message || "Tidak ada license dikembalikan backend"
+        );
         return;
         }
 
+        // ✅ Convert ke format Excel
         const worksheetData = licenses.map((key, index) => ({
         No: index + 1,
         License_Key: key,
         Taken_At: new Date().toLocaleString(),
         }));
+
+        console.log("Worksheet Data:", worksheetData);
 
         const worksheet = XLSX.utils.json_to_sheet(worksheetData);
         const workbook = XLSX.utils.book_new();
@@ -165,32 +185,45 @@ export default function LicensesPage() {
         type: "array",
         });
 
+        console.log("Excel Buffer Size:", excelBuffer.byteLength);
+
+        // ✅ Blob Excel
         const blob = new Blob([excelBuffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        type:
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         });
 
         const url = URL.createObjectURL(blob);
 
-        setTimeout(() => {
+        // ✅ Download trigger (PALING STABIL)
         const a = document.createElement("a");
         a.href = url;
         a.download = `licenses-product-${id}.xlsx`;
 
         document.body.appendChild(a);
+
+        requestAnimationFrame(() => {
+        console.log("Triggering download...");
         a.click();
-        document.body.removeChild(a);
 
-        URL.revokeObjectURL(url);
-        }, 0);
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 200);
+        });
 
+        // ✅ Toast sukses
         showToast("success", `${licenses.length} license diunduh`);
+
+        // ✅ Reload data summary/table
         loadData();
 
     } catch (err) {
-        console.error(err);
-        showToast("error", err.message);
+        console.error("TAKE STOCK ERROR:", err);
+        showToast("error", err.message || "Gagal take stock");
     }
   };
+
 
   const SkeletonRow = () => (
     <tr className="border-b border-white/5">
