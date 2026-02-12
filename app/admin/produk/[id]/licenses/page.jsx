@@ -33,6 +33,8 @@ export default function LicensesPage() {
     try {
       const res = await licenseService.getByProduct(id);
       const sum = await licenseService.getSummary(id);
+      console.log("LICENSES:", res);
+      console.log("UPLOAD:", res);
 
       setLicenses(res.data || []);
       setSummary(sum.data?.counts || null);
@@ -44,8 +46,9 @@ export default function LicensesPage() {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (id) loadData();
+  }, [id]);
+
 
   // ================= SINGLE INSERT =================
   const handleSingleInsert = async () => {
@@ -55,10 +58,11 @@ export default function LicensesPage() {
     }
 
     try {
-      await licenseService.createSingle(id, {
-        license_key: licenseKey,
-        note
-      });
+        await licenseService.createSingle(id, {
+            license_key: licenseKey,
+            data_other: null,
+            note
+        });
 
       showToast("success", "License berhasil ditambahkan");
       setShowSingleModal(false);
@@ -148,6 +152,7 @@ export default function LicensesPage() {
       ))}
     </tr>
   );
+
 
   return (
     <motion.div className="rounded-2xl border border-purple-600/60 bg-black p-6">
