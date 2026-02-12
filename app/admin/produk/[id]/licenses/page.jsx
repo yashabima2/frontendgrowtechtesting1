@@ -14,6 +14,15 @@ export default function LicensesPage() {
   const [toast, setToast] = useState(null);
   const [qty, setQty] = useState(1);
 
+  const [showSingleModal, setShowSingleModal] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+
+  const [licenseKey, setLicenseKey] = useState("");
+  const [note, setNote] = useState("");
+
+  const [bulkText, setBulkText] = useState("");
+
   const showToast = (type, message) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 2500);
@@ -38,6 +47,74 @@ export default function LicensesPage() {
     loadData();
   }, []);
 
+  // ================= SINGLE INSERT =================
+  const handleSingleInsert = async () => {
+    if (!licenseKey) {
+      showToast("error", "License key wajib diisi");
+      return;
+    }
+
+    try {
+      await licenseService.createSingle(id, {
+        license_key: licenseKey,
+        note
+      });
+
+      showToast("success", "License berhasil ditambahkan");
+      setShowSingleModal(false);
+      setLicenseKey("");
+      setNote("");
+      loadData();
+
+    } catch {
+      showToast("error", "Gagal tambah license");
+    }
+  };
+
+  // ================= BULK UPLOAD =================
+  const handleBulkUpload = async () => {
+    if (!bulkText) {
+      showToast("error", "Bulk text kosong");
+      return;
+    }
+
+    try {
+      const res = await licenseService.uploadBulk(id, bulkText);
+
+      showToast(
+        "success",
+        `Masuk: ${res.data.inserted}, Duplikat: ${res.data.duplicate}`
+      );
+
+      setShowBulkModal(false);
+      setBulkText("");
+      loadData();
+
+    } catch {
+      showToast("error", "Bulk upload gagal");
+    }
+  };
+
+  // ================= CHECK DUPLICATES =================
+  const handleCheckDuplicate = async () => {
+    if (!bulkText) {
+      showToast("error", "Isi bulk text dulu");
+      return;
+    }
+
+    try {
+      const res = await licenseService.checkDuplicates(id, bulkText);
+
+      showToast(
+        "success",
+        `Baru: ${res.data.new}, Duplikat: ${res.data.duplicate}`
+      );
+
+    } catch {
+      showToast("error", "Gagal check duplicate");
+    }
+  };
+
   // ================= TAKE STOCK =================
   const handleTakeStock = async () => {
     try {
@@ -54,8 +131,7 @@ export default function LicensesPage() {
       a.download = `licenses-product-${id}.txt`;
       a.click();
 
-      showToast("success", `Berhasil mengambil ${qty} license`);
-
+      showToast("success", `Ambil ${qty} license`);
       loadData();
 
     } catch {
@@ -74,11 +150,7 @@ export default function LicensesPage() {
   );
 
   return (
-    <motion.div
-      className="rounded-2xl border border-purple-600/60 bg-black p-6 shadow-[0_0_25px_rgba(168,85,247,0.15)]"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-    >
+    <motion.div className="rounded-2xl border border-purple-600/60 bg-black p-6">
 
       {/* TOAST */}
       <AnimatePresence>
@@ -104,27 +176,29 @@ export default function LicensesPage() {
           Licenses Produk #{id}
         </h1>
 
-        <button
-          onClick={loadData}
-          className="px-4 py-2 rounded-lg bg-purple-700 hover:bg-purple-600 text-white text-sm"
-        >
-          Refresh
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setShowSingleModal(true)} className="btn-add">
+            + Tambah License
+          </button>
+
+          <button onClick={() => setShowBulkModal(true)} className="btn-warning">
+            Bulk Upload
+          </button>
+
+          <button onClick={() => setShowDuplicateModal(true)} className="btn-info">
+            Check Duplicate
+          </button>
+        </div>
       </div>
 
       {/* SUMMARY */}
       {summary && (
         <div className="grid grid-cols-6 gap-3 mb-6">
           {Object.entries(summary).map(([key, val]) => (
-            <motion.div
-              key={key}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-lg bg-purple-900/30 p-3 text-center border border-purple-500/20"
-            >
+            <div key={key} className="rounded-lg bg-purple-900/30 p-3 text-center">
               <p className="text-xs text-gray-400 capitalize">{key}</p>
               <p className="text-lg text-white font-bold">{val}</p>
-            </motion.div>
+            </div>
           ))}
         </div>
       )}
@@ -136,84 +210,110 @@ export default function LicensesPage() {
           min="1"
           value={qty}
           onChange={(e) => setQty(Number(e.target.value))}
-          className="w-24 h-10 rounded-lg bg-purple-900/40 px-3 text-white outline-none"
+          className="w-24 h-10 rounded-lg bg-purple-900/40 px-3 text-white"
         />
 
-        <button
-          onClick={handleTakeStock}
-          className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white text-sm"
-        >
+        <button onClick={handleTakeStock} className="btn-success">
           Take Stock
         </button>
       </div>
 
       {/* TABLE */}
-      <div className="rounded-xl border border-purple-600/40 overflow-hidden">
+      <div className="rounded-xl border border-purple-600/40">
         <table className="w-full text-sm text-gray-300">
-          <thead className="bg-purple-900/30">
+          <thead>
             <tr className="border-b border-white/10">
-              <th className="py-3">License Key</th>
+              <th>License Key</th>
               <th>Status</th>
               <th>Note</th>
             </tr>
           </thead>
-
           <tbody>
             {loading ? (
               <>
                 <SkeletonRow />
                 <SkeletonRow />
-                <SkeletonRow />
               </>
-            ) : licenses.length === 0 ? (
-              <tr>
-                <td colSpan="3" className="text-center py-6 text-purple-300">
-                  Tidak ada license
-                </td>
+            ) : licenses.map(l => (
+              <tr key={l.id}>
+                <td className="text-white">{l.license_key}</td>
+                <td>{l.status}</td>
+                <td>{l.note || "-"}</td>
               </tr>
-            ) : (
-              licenses.map(l => (
-                <tr key={l.id} className="border-b border-white/5">
-                  <td className="py-2 text-white">{l.license_key}</td>
-                  <td>{l.status}</td>
-                  <td>{l.note || "-"}</td>
-                </tr>
-              ))
-            )}
+            ))}
           </tbody>
         </table>
       </div>
 
-      {/* SHIMMER STYLE */}
-      <style jsx>{`
-        .shimmer {
-          position: relative;
-          overflow: hidden;
-          background: rgba(168, 85, 247, 0.15);
-        }
+      {/* ================= MODALS ================= */}
 
-        .shimmer::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -150%;
-          height: 100%;
-          width: 150%;
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.25),
-            transparent
-          );
-          animation: shimmer 1.2s infinite;
-        }
+      {/* SINGLE MODAL */}
+      {showSingleModal && (
+        <Modal onClose={() => setShowSingleModal(false)} title="Tambah License">
+          <input
+            placeholder="License Key"
+            value={licenseKey}
+            onChange={(e) => setLicenseKey(e.target.value)}
+            className="input"
+          />
+          <input
+            placeholder="Note"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            className="input"
+          />
+          <button onClick={handleSingleInsert} className="btn-success">
+            Simpan
+          </button>
+        </Modal>
+      )}
 
-        @keyframes shimmer {
-          100% {
-            left: 150%;
-          }
-        }
-      `}</style>
+      {/* BULK MODAL */}
+      {showBulkModal && (
+        <Modal onClose={() => setShowBulkModal(false)} title="Bulk Upload">
+          <textarea
+            rows="6"
+            placeholder="1 key per baris..."
+            value={bulkText}
+            onChange={(e) => setBulkText(e.target.value)}
+            className="input"
+          />
+          <button onClick={handleBulkUpload} className="btn-success">
+            Upload
+          </button>
+        </Modal>
+      )}
+
+      {/* DUPLICATE MODAL */}
+      {showDuplicateModal && (
+        <Modal onClose={() => setShowDuplicateModal(false)} title="Check Duplicate">
+          <textarea
+            rows="6"
+            value={bulkText}
+            onChange={(e) => setBulkText(e.target.value)}
+            className="input"
+          />
+          <button onClick={handleCheckDuplicate} className="btn-info">
+            Check
+          </button>
+        </Modal>
+      )}
+
     </motion.div>
+  );
+}
+
+// ================= MODAL COMPONENT =================
+function Modal({ title, children, onClose }) {
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-black border border-purple-600 rounded-xl p-6 w-[400px]">
+        <div className="flex justify-between mb-3">
+          <h2 className="text-white font-bold">{title}</h2>
+          <button onClick={onClose} className="text-red-400">✕</button>
+        </div>
+        <div className="space-y-3">{children}</div>
+      </div>
+    </div>
   );
 }
