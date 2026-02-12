@@ -171,12 +171,17 @@ export default function LicensesPage() {
 
         const url = URL.createObjectURL(blob);
 
+        setTimeout(() => {
         const a = document.createElement("a");
         a.href = url;
         a.download = `licenses-product-${id}.xlsx`;
+
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
 
         URL.revokeObjectURL(url);
+        }, 0);
 
         showToast("success", `${licenses.length} license diunduh`);
         loadData();
