@@ -264,8 +264,8 @@ export default function ProdukPage() {
                     }}
                     className="border-b border-white/5"
                   >
-                    <td className="py-3 text-white">{p.name}</td>
-                    <td className="py-3">{p.duration_days} hari</td>
+                    <td className="py-3 text-white text-center">{p.name}</td>
+                    <td className="py-3 text-center">{p.duration_days} hari</td>
                     <td className="py-3 text-center">
                       {licenseSummary[p.id] ? (
                         <div className="text-xs">
@@ -278,13 +278,13 @@ export default function ProdukPage() {
                         "-"
                       )}
                     </td>
-                    <td className="py-3">
+                    <td className="py-3 text-center">
                       Rp {p.tier_pricing?.member?.toLocaleString() || "-"}
                     </td>
-                    <td className="py-3">
+                    <td className="py-3 text-center">
                       Rp {p.tier_pricing?.reseller?.toLocaleString() || "-"}
                     </td>
-                    <td className="py-3">
+                    <td className="py-3 text-center">
                       Rp {p.tier_pricing?.vip?.toLocaleString() || "-"}
                     </td>
 

@@ -35,6 +35,11 @@ export default function ManajemenPenggunaPage() {
   const [selectedId, setSelectedId] = useState(null)
   const [selectedRow, setSelectedRow] = useState(null)
 
+  const [search, setSearch] = useState("")
+  const [filteredData, setFilteredData] = useState([])
+  const [showFilter, setShowFilter] = useState(false)
+  const [roleFilter, setRoleFilter] = useState("all")
+
   const [meta, setMeta] = useState({
     total: 0,
     per_page: limit,
@@ -44,6 +49,25 @@ export default function ManajemenPenggunaPage() {
   useEffect(() => {
     fetchData()
   }, [tab, page])
+
+  useEffect(() => {
+    if (!search.trim()) {
+      setFilteredData(data)
+      return
+    }
+
+    const keyword = search.toLowerCase()
+
+    const result = data.filter(user =>
+      user.name?.toLowerCase().includes(keyword) ||
+      user.email?.toLowerCase().includes(keyword) ||
+      user.full_name?.toLowerCase().includes(keyword) ||
+      user.address?.toLowerCase().includes(keyword)
+    )
+
+    setFilteredData(result)
+
+  }, [search, data])
 
   async function fetchData() {
     try {
@@ -68,6 +92,8 @@ export default function ManajemenPenggunaPage() {
       )
 
       setData(filteredUsers)
+      setFilteredData(filteredUsers)
+
 
       //  PAGINATION
       setMeta({
@@ -159,13 +185,18 @@ export default function ManajemenPenggunaPage() {
 
           {/* TOOLBAR */}
           <div className="flex flex-wrap items-center gap-3 mb-6">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-purple-700 hover:bg-purple-700/20">
+            <button
+              onClick={() => setShowFilter(!showFilter)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-purple-700 hover:bg-purple-700/20"
+            >
               <Filter size={16} />
               Filter
             </button>
 
             <input
               placeholder="Cari data..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               className="flex-1 min-w-[200px] rounded-lg bg-purple-900/40 px-4 py-2 outline-none border border-purple-700"
             />
 
@@ -208,7 +239,7 @@ export default function ManajemenPenggunaPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.map(row => (
+                {filteredData.map(row => (
                   <tr
                     key={row.id}
                     onClick={() => {
@@ -280,7 +311,7 @@ export default function ManajemenPenggunaPage() {
              MOBILE CARD
           ========================= */}
           <div className="md:hidden space-y-4">
-            {data.map(row => (
+            {filteredData.map(row => (
               <div
                 key={row.id}
                 onClick={() => {
