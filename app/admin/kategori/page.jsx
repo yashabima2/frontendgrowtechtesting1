@@ -164,10 +164,10 @@ export default function KategoriPage() {
               {categories.map(item => (
                 <tr
                   key={item.id}
-                  className="border-b border-white/5 hover:bg-purple-900/20"
+                  className="border-b border-white/5 hover:bg-purple-900/20 text-center"
                 >
-                  <td>{item.id}</td>
-                  <td className="text-white">{item.name}</td>
+                  <td className="text-center">{item.id}</td>
+                  <td className="text-white text-center">{item.name}</td>
                   <td className="text-center space-x-2">
                     <button
                       className="btn-edit-sm"

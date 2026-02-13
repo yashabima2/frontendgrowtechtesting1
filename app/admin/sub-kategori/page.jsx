@@ -376,18 +376,18 @@ export default function SubKategoriPage() {
 
             <tbody>
               {items.map((item) => (
-                <tr key={item.id} className="border-b border-white/5">
+                <tr key={item.id} className="border-b border-white/5 text-center">
                   <td>{item.id}</td>
                   <td>
                     {item.image_url ? (
                       <NextImage src={item.image_url} width={40} height={40} alt="" />
                     ) : (
-                      <span className="text-white/30">-</span>
+                      <span className="text-white/30 text-center">-</span>
                     )}
                   </td>
-                  <td>{item.name}</td>
-                  <td>{item.category?.name}</td>
-                  <td>{item.provider}</td>
+                  <td className="text-center">{item.name}</td>
+                  <td className="text-center">{item.category?.name}</td>
+                  <td className="text-center">{item.provider}</td>
                   <td className="space-x-2">
                     <button onClick={() => openEdit(item)} className="btn-edit-sm">
                       Edit

@@ -200,10 +200,10 @@ export default function ManajemenPenggunaPage() {
             <table className="w-full text-sm border-collapse">
               <thead className="border-b border-purple-700 text-gray-300">
                 <tr>
-                  <th className="py-3 text-left">Username</th>
-                  <th>Email</th>
-                  <th>Nama Lengkap</th>
-                  <th>Alamat</th>
+                  <th className="py-3 text-center">Username</th>
+                  <th className="py-3 text-center">Email</th>
+                  <th className="py-3 text-center">Nama Lengkap</th>
+                  <th className="py-3 text-center">Alamat</th>
                   <th className="text-right">Aksi</th>
                 </tr>
               </thead>
@@ -221,10 +221,10 @@ export default function ManajemenPenggunaPage() {
                         : "border-purple-800/40"}
                     `}
                   >
-                    <td className="py-3 font-medium">{row.name}</td>
-                    <td>{row.email}</td>
-                    <td>{row.full_name ?? "-"}</td>
-                    <td>{row.address ?? "-"}</td>
+                    <td className="py-3 font-medium text-center">{row.name}</td>
+                    <td className="text-center">{row.email}</td>
+                    <td className="text-center">{row.full_name ?? "-"}</td>
+                    <td className="text-center">{row.address ?? "-"}</td>
 
                     <td className="text-right space-x-2">
                       <button
