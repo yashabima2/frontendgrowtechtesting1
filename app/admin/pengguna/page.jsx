@@ -204,7 +204,7 @@ export default function ManajemenPenggunaPage() {
                   <th className="py-3 text-center">Email</th>
                   <th className="py-3 text-center">Nama Lengkap</th>
                   <th className="py-3 text-center">Alamat</th>
-                  <th className="text-right">Aksi</th>
+                  <th className="py-3 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -227,17 +227,20 @@ export default function ManajemenPenggunaPage() {
                     <td className="text-center">{row.address ?? "-"}</td>
 
                     <td className="text-right space-x-2">
-                      <button
+                      <motion.button
                         onClick={(e) => {
                           e.stopPropagation()
                           setSelectedRow(row)
                           setModal("saldo")
                         }}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-700 hover:bg-purple-600"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                        className="btn-purple-solid inline-flex items-center gap-2 px-4 py-2 rounded-lg "
                       >
                         <Wallet size={16} />
                         Add Saldo
-                      </button>
+                      </motion.button>
                       {/* EDIT */}
                       <button
                         onClick={(e) => {
