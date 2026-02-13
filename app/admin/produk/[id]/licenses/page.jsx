@@ -28,6 +28,7 @@ export default function LicensesPage() {
   const [showProofModal, setShowProofModal] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
   const perPage = 10; 
 
   const totalPages = Math.ceil(licenses.length / perPage);
@@ -46,7 +47,7 @@ export default function LicensesPage() {
     setLoading(true);
     try {
       const [res, sum, proofRes] = await Promise.all([
-        licenseService.getByProduct(id + '?page=2'),
+        licenseService.getByProduct(id),
         licenseService.getSummary(id),
         licenseService.proofList()
       ]);
