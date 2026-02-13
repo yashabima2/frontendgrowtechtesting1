@@ -31,4 +31,17 @@ export const licenseService = {
       method: "POST",
       body: JSON.stringify({ qty }),
     }),
+
+  proofList: () =>
+    authFetch(`/api/v1/admin/stock/proofs`),
+
+  proofDownload: (proofId) =>
+    authFetch(`/api/v1/admin/stock/proofs/${proofId}`),
+
+  proofDownloadJson: (proofId) =>
+    authFetch(`/api/v1/admin/stock/proofs/${proofId}/json`),
+
+  proofDownloadCsv: (proofId) =>
+    authFetch(`/api/v1/admin/stock/proofs/${proofId}/csv`),
+
 };

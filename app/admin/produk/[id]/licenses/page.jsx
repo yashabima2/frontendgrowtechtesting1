@@ -24,6 +24,9 @@ export default function LicensesPage() {
   const [note, setNote] = useState("");
 
   const [bulkText, setBulkText] = useState("");
+  const [proofs, setProofs] = useState([]);
+  const [showProofModal, setShowProofModal] = useState(false);
+
 
   const showToast = (type, message) => {
     setToast({ type, message });
@@ -35,7 +38,10 @@ export default function LicensesPage() {
     try {
       const res = await licenseService.getByProduct(id);
       const sum = await licenseService.getSummary(id);
-      const prod = await licenseService.getProduct(id); // 👈 tambahkan ini
+      const prod = await licenseService.getProduct(id);
+      const proofRes = await licenseService.proofList();
+      setProofs(proofRes.data?.data || []);
+
 
       console.log("PRODUCT JSON:", prod);
 
@@ -290,6 +296,15 @@ export default function LicensesPage() {
           >
             Check Duplicate
           </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowProofModal(true)}
+            className="btn-purple"
+          >
+            Stock Proofs
+          </motion.button>
+
         </div>
       </div>
 
@@ -458,6 +473,59 @@ export default function LicensesPage() {
           <button onClick={handleCheckDuplicate} className="btn-info">
             Check
           </button>
+        </Modal>
+      )}
+      
+      {showProofModal && (
+        <Modal onClose={() => setShowProofModal(false)} title="Riwayat Stock Proof">
+          {proofs.length === 0 ? (
+            <p className="text-gray-500 text-sm">Belum ada proof</p>
+          ) : (
+            <div className="max-h-[300px] overflow-y-auto space-y-2">
+              {proofs.map((p) => (
+                <div
+                  key={p.id}
+                  className="border border-purple-600/30 rounded-lg p-3 text-sm"
+                >
+                  <p className="text-white font-semibold">
+                    Proof #{p.id}
+                  </p>
+                  <p className="text-gray-400">
+                    Qty: {p.qty} • {p.created_at}
+                  </p>
+
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={() => window.open(
+                        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/admin/stock/proofs/${p.id}`
+                      )}
+                      className="btn-success"
+                    >
+                      Excel
+                    </button>
+
+                    <button
+                      onClick={() => window.open(
+                        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/admin/stock/proofs/${p.id}/csv`
+                      )}
+                      className="btn-info"
+                    >
+                      CSV
+                    </button>
+
+                    <button
+                      onClick={() => window.open(
+                        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/admin/stock/proofs/${p.id}/json`
+                      )}
+                      className="btn-purple-solid"
+                    >
+                      JSON
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </Modal>
       )}
 
