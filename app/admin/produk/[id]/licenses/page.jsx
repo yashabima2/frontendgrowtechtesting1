@@ -359,24 +359,54 @@ export default function LicensesPage() {
           </thead>
           <tbody>
             {loading ? (
-                <>
+              <>
                 <SkeletonRow />
                 <SkeletonRow />
-                </>
+              </>
             ) : licenses.length === 0 ? (
-                <tr>
-                <td colSpan="3" className="text-center py-4 text-gray-500">
+              <tr>
+                <td colSpan="3" className="py-10 text-center">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-gray-500"
+                  >
                     Tidak ada license
+                  </motion.div>
                 </td>
-                </tr>
+              </tr>
             ) : (
-                licenses.map(l => (
-                <tr key={l.id}>
-                    <td className="text-white">{l.license_key}</td>
-                    <td>{l.status}</td>
-                    <td>{l.note || "-"}</td>
-                </tr>
-                ))
+              <AnimatePresence>
+                {licenses.map((l, i) => (
+                  <motion.tr
+                    key={l.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{
+                      duration: 0.25,
+                      delay: i * 0.03,
+                      ease: "easeOut"
+                    }}
+                    whileHover={{
+                      backgroundColor: "rgba(168,85,247,0.08)",
+                    }}
+                    className="border-b border-white/5"
+                  >
+                    <td className="text-white font-medium">
+                      {l.license_key}
+                    </td>
+
+                    <td>
+                      <StatusBadge status={l.status} />
+                    </td>
+
+                    <td className="text-gray-400">
+                      {l.note || "-"}
+                    </td>
+                  </motion.tr>
+                ))}
+              </AnimatePresence>
             )}
           </tbody>
         </table>
@@ -452,5 +482,26 @@ function Modal({ title, children, onClose }) {
         <div className="space-y-3">{children}</div>
       </div>
     </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const color =
+    status === "available"
+      ? "bg-green-500/20 text-green-400"
+      : status === "taken"
+      ? "bg-yellow-500/20 text-yellow-400"
+      : "bg-gray-500/20 text-gray-400";
+
+  return (
+    <motion.span
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      whileHover={{ scale: 1.08 }}
+      transition={{ type: "spring", stiffness: 300 }}
+      className={`px-3 py-1 rounded-full text-xs font-semibold ${color}`}
+    >
+      {status}
+    </motion.span>
   );
 }
