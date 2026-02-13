@@ -30,15 +30,20 @@ export async function authFetch(url, options = {}) {
     throw new Error("Session expired");
   }
 
+  const contentType = res.headers.get("content-type");
+
   let data = null;
-  try {
+
+  if (contentType && contentType.includes("application/json")) {
     data = await res.json();
-  } catch {
-    throw new Error("Invalid JSON response");
+  } else {
+    const text = await res.text();
+    console.error("Non-JSON response:", text);
+    throw new Error(`Server mengembalikan bukan JSON (HTTP ${res.status})`);
   }
 
   if (!res.ok) {
-    throw new Error(data?.error || `HTTP ${res.status}`);
+    throw new Error(data?.error?.message || data?.message || `HTTP ${res.status}`);
   }
 
   return data;
