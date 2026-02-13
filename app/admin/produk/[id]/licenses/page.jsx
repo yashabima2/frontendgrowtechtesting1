@@ -8,6 +8,7 @@ import * as XLSX from "xlsx";
 
 export default function LicensesPage() {
   const { id } = useParams();
+  const [productName, setProductName] = useState("");
 
   const [licenses, setLicenses] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -32,20 +33,22 @@ export default function LicensesPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-        const res = await licenseService.getByProduct(id);
-        const sum = await licenseService.getSummary(id);
+      const res = await licenseService.getByProduct(id);
+      const sum = await licenseService.getSummary(id);
+      const prod = await licenseService.getProduct(id); // 👈 tambahkan ini
 
-        console.log("LICENSES JSON:", res);
-        console.log("SUMMARY JSON:", sum);
+      console.log("PRODUCT JSON:", prod);
 
-        setLicenses(res.data?.data || []);
-        setSummary(sum.data?.counts || null);
+      setLicenses(res.data?.data || []);
+      setSummary(sum.data?.counts || null);
+      setProductName(prod.data?.name || "Produk"); // 👈 ambil name
 
     } catch (err) {
-        showToast("error", err.message);
+      showToast("error", err.message);
     }
     setLoading(false);
   };
+
 
 
   useEffect(() => {
@@ -133,7 +136,7 @@ export default function LicensesPage() {
   // ================= TAKE STOCK =================
   const handleTakeStock = async () => {
     try {
-        // ✅ Validasi qty
+
         if (qty <= 0) {
         showToast("error", "Qty harus lebih dari 0");
         return;
@@ -144,12 +147,10 @@ export default function LicensesPage() {
         return;
         }
 
-        // ✅ Call backend
         const res = await licenseService.takeStock(id, qty);
 
         console.log("TAKE STOCK RESPONSE:", res);
 
-        // ✅ Handle berbagai kemungkinan struktur response backend
         const licenses =
         res?.data?.licenses ||
         res?.data?.data?.licenses ||
@@ -157,7 +158,6 @@ export default function LicensesPage() {
 
         console.log("LICENSES RESULT:", licenses);
 
-        // ✅ Jika backend tidak kirim license list
         if (!licenses.length) {
         showToast(
             "error",
@@ -166,7 +166,6 @@ export default function LicensesPage() {
         return;
         }
 
-        // ✅ Convert ke format Excel
         const worksheetData = licenses.map((key, index) => ({
         No: index + 1,
         License_Key: key,
@@ -187,7 +186,6 @@ export default function LicensesPage() {
 
         console.log("Excel Buffer Size:", excelBuffer.byteLength);
 
-        // ✅ Blob Excel
         const blob = new Blob([excelBuffer], {
         type:
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -195,7 +193,6 @@ export default function LicensesPage() {
 
         const url = URL.createObjectURL(blob);
 
-        // ✅ Download trigger (PALING STABIL)
         const a = document.createElement("a");
         a.href = url;
         a.download = `licenses-product-${id}.xlsx`;
@@ -212,10 +209,8 @@ export default function LicensesPage() {
         }, 200);
         });
 
-        // ✅ Toast sukses
         showToast("success", `${licenses.length} license diunduh`);
 
-        // ✅ Reload data summary/table
         loadData();
 
     } catch (err) {
@@ -270,7 +265,7 @@ export default function LicensesPage() {
       {/* HEADER */}
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-3xl font-bold text-white">
-          Licenses Produk #{id}
+          Licenses Produk {productName}
         </h1>
 
         <div className="flex gap-2">
@@ -352,9 +347,9 @@ export default function LicensesPage() {
         <table className="w-full text-sm text-gray-300">
           <thead>
             <tr className="border-b border-white/10">
-              <th>License Key</th>
-              <th>Status</th>
-              <th>Note</th>
+              <th className="py-3 text-center">License Key</th>
+              <th className="py-3 text-center">Status</th>
+              <th className="py-3 text-center">Note</th>
             </tr>
           </thead>
           <tbody>
@@ -393,15 +388,15 @@ export default function LicensesPage() {
                     }}
                     className="border-b border-white/5"
                   >
-                    <td className="text-white font-medium">
+                    <td className="py-4 text-white font-medium">
                       {l.license_key}
                     </td>
 
-                    <td>
+                    <td className="py-4 text-center">
                       <StatusBadge status={l.status} />
                     </td>
 
-                    <td className="text-gray-400">
+                    <td className="py-4 text-center text-gray-400">
                       {l.note || "-"}
                     </td>
                   </motion.tr>
