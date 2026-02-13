@@ -12,7 +12,7 @@ const VELOCITY_THRESHOLD = 500
 
 export default function BannerCarousel({
   banners = [],
-  baseWidth = 340,
+  baseWidth = 400,
   autoplay = true,
   autoplayDelay = 3500,
   pauseOnHover = true,
