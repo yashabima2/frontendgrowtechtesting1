@@ -14,6 +14,16 @@ const normalizeSettings = (rows = []) =>
 export default function HomePage() {
   const API = process.env.NEXT_PUBLIC_API_URL
   const [brand, setBrand] = useState({})
+  const [banners, setBanners] = useState([])
+
+  useEffect(() => {
+    fetch(`${API}/api/v1/content/banners`)
+      .then(res => res.json())
+      .then(res => {
+        setBanners(res.data || [])
+      })
+      .catch(console.error)
+  }, [API])
 
   useEffect(() => {
     fetch(`${API}/api/v1/content/settings?group=website`)
@@ -79,7 +89,7 @@ export default function HomePage() {
       </section>
 
       <BannerCarousel
-        banners={bannersFromAPI}
+        banners={banners}
         baseWidth={340}
         autoplay
         loop

@@ -19,6 +19,16 @@ export default function CustomerHomePage() {
   const [popup, setPopup] = useState(null)
   const [open, setOpen] = useState(true)
   const [brand, setBrand] = useState({})
+  const [banners, setBanners] = useState([])
+
+  useEffect(() => {
+    fetch(`${API}/api/v1/content/banners`)
+      .then(res => res.json())
+      .then(res => {
+        setBanners(res.data || [])
+      })
+      .catch(console.error)
+  }, [API])
 
   /* ================= POPUP CUSTOMER ================= */
   useEffect(() => {
@@ -128,7 +138,7 @@ export default function CustomerHomePage() {
       </section>
 
       <BannerCarousel
-        banners={bannersFromAPI}
+        banners={banners}
         baseWidth={340}
         autoplay
         loop
