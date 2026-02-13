@@ -1,27 +1,29 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
 
-const GAP = 28
-const SPRING = { type: 'spring', stiffness: 220, damping: 26 }
-const DRAG_BUFFER = 80
+const GAP = 32
+const SPRING = { type: 'spring', stiffness: 180, damping: 24 }
+const DRAG_BUFFER = 120
 const VELOCITY_THRESHOLD = 500
 
 export default function BannerCarousel({
   banners = [],
-  baseWidth = 400,
+  baseWidth = 720, // ✅ Lebar ala banner iklan
   autoplay = true,
-  autoplayDelay = 3500,
+  autoplayDelay = 4000,
   pauseOnHover = true,
   loop = true,
 }) {
+  const containerRef = useRef(null)
+
   const itemWidth = baseWidth
   const trackOffset = itemWidth + GAP
 
-  // ✅ FIX: Duplikasi jika banner terlalu sedikit
+  // ✅ Duplikasi kalau banner sedikit
   const extendedBanners = useMemo(() => {
     if (banners.length >= 3) return banners
     return [...banners, ...banners, ...banners]
@@ -93,86 +95,89 @@ export default function BannerCarousel({
   if (!banners.length) return null
 
   return (
-    <section className="relative w-full overflow-hidden py-24">
+    <section className="relative w-full py-28">
 
-      {/* Glow background */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.12),transparent_60%)]" />
+      {/* Glow Background */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.18),transparent_60%)]" />
 
       <div
-        className="relative"
+        ref={containerRef}
+        className="relative overflow-hidden"
         onMouseEnter={() => pauseOnHover && setHovered(true)}
         onMouseLeave={() => pauseOnHover && setHovered(false)}
       >
-        {/* ✅ Wrapper center */}
-        <div className="overflow-hidden">
-          <motion.div
-            className="flex"
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            onDragEnd={handleDragEnd}
-            animate={{ x: -(position * trackOffset) }}
-            transition={jumping ? { duration: 0 } : SPRING}
-            style={{ gap: GAP }}
-            onAnimationComplete={handleAnimationComplete}
-          >
-            {itemsForRender.map((banner, i) => {
-              const isActive =
-                (i - 1 + extendedBanners.length) %
-                  extendedBanners.length === activeIndex
+        <motion.div
+          className="flex cursor-grab active:cursor-grabbing"
+          drag="x"
+          dragConstraints={{ left: 0, right: 0 }}
+          onDragEnd={handleDragEnd}
+          animate={{ x: -(position * trackOffset) }}
+          transition={jumping ? { duration: 0 } : SPRING}
+          style={{ gap: GAP }}
+          onAnimationComplete={handleAnimationComplete}
+        >
+          {itemsForRender.map((banner, i) => {
+            const isActive =
+              (i - 1 + extendedBanners.length) %
+                extendedBanners.length === activeIndex
 
-              return (
-                <motion.div
-                  key={banner.id + '-' + i}
-                  className="relative shrink-0"
-                  animate={{
-                    scale: isActive ? 1 : 0.82,
-                    opacity: isActive ? 1 : 0.45,
-                    y: isActive ? 0 : 18,
-                  }}
-                  transition={{ duration: 0.45 }}
-                  style={{
-                    width: itemWidth,
-                    height: 260,
-                  }}
-                >
-                  <Link href={banner.link_url || '#'}>
-                    <div className="relative w-full h-full rounded-2xl overflow-hidden">
+            return (
+              <motion.div
+                key={banner.id + '-' + i}
+                className="relative shrink-0"
+                animate={{
+                  scale: isActive ? 1 : 0.75,
+                  opacity: isActive ? 1 : 0.35,
+                  y: isActive ? 0 : 35,
+                }}
+                transition={{ duration: 0.5 }}
+                style={{
+                  width: itemWidth,
+                  height: 320, // ✅ Tinggi hero banner
+                }}
+              >
+                <Link href={banner.link_url || '#'}>
+                  <div className="relative w-full h-full rounded-3xl overflow-hidden">
 
-                      <Image
-                        src={banner.image_url}
-                        alt={banner.title || 'Banner'}
-                        fill
-                        priority
-                        unoptimized
-                        className="object-cover"
-                      />
+                    <Image
+                      src={banner.image_url}
+                      alt={banner.title || 'Banner'}
+                      fill
+                      priority
+                      unoptimized
+                      className="object-cover"
+                    />
 
-                      <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-purple-500/10" />
-                      <div className="absolute inset-0 shadow-[0_0_40px_rgba(168,85,247,0.25)]" />
+                    {/* Dark overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-black/50 via-transparent to-purple-500/10" />
 
-                    </div>
-                  </Link>
-                </motion.div>
-              )
-            })}
-          </motion.div>
-        </div>
+                    {/* Glow */}
+                    {isActive && (
+                      <div className="absolute inset-0 shadow-[0_0_70px_rgba(168,85,247,0.35)]" />
+                    )}
+
+                  </div>
+                </Link>
+              </motion.div>
+            )
+          })}
+        </motion.div>
 
         {/* INDICATORS */}
-        <div className="flex justify-center mt-10 gap-3">
+        <div className="flex justify-center mt-12 gap-3">
           {banners.map((_, i) => (
             <motion.button
               key={i}
               onClick={() => setPosition(loop ? i + 1 : i)}
               animate={{
-                width: activeIndex === i ? 28 : 10,
+                width: activeIndex === i ? 34 : 10,
                 opacity: activeIndex === i ? 1 : 0.35,
               }}
               transition={{ duration: 0.3 }}
               className={`h-[10px] rounded-full ${
                 activeIndex === i
-                  ? 'bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.9)]'
-                  : 'bg-white/40'
+                  ? 'bg-purple-500 shadow-[0_0_14px_rgba(168,85,247,0.9)]'
+                  : 'bg-white/30'
               }`}
             />
           ))}
