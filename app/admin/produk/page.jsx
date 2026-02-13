@@ -334,7 +334,7 @@ export default function ProdukPage() {
                       </button>
                       <button
                         onClick={() => router.push(`/admin/produk/${p.id}/licenses`)}
-                        className="btn-purple-sm"
+                        className="btn-purple"
                       >
                         Licenses
                       </button>
