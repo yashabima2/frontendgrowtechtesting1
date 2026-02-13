@@ -268,11 +268,11 @@ export default function LicensesPage() {
             + Tambah License
           </button>
 
-          <button onClick={() => setShowBulkModal(true)} className="btn-warning">
+          <button onClick={() => setShowBulkModal(true)} className="btn-purple">
             Bulk Upload
           </button>
 
-          <button onClick={() => setShowDuplicateModal(true)} className="btn-info">
+          <button onClick={() => setShowDuplicateModal(true)} className="btn-purple">
             Check Duplicate
           </button>
         </div>
