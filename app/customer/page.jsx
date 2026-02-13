@@ -127,7 +127,12 @@ export default function CustomerHomePage() {
         </div>
       </section>
 
-      <BannerCarousel />
+      <BannerCarousel
+        banners={bannersFromAPI}
+        baseWidth={340}
+        autoplay
+        loop
+      />
 
       {/* ================= PRODUK POPULER ================= */}
       <section className="mx-auto max-w-7xl px-8 pt-32 pb-40">

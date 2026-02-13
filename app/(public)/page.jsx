@@ -78,7 +78,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      <BannerCarousel />
+      <BannerCarousel
+        banners={bannersFromAPI}
+        baseWidth={340}
+        autoplay
+        loop
+      />
     </main>
   )
 }
