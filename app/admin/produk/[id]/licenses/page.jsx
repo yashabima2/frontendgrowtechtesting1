@@ -36,24 +36,24 @@ export default function LicensesPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const res = await licenseService.getByProduct(id);
-      const sum = await licenseService.getSummary(id);
-      const prod = await licenseService.getProduct(id);
-      const proofRes = await licenseService.proofList();
-      setProofs(proofRes.data?.data || []);
-
-
-      console.log("PRODUCT JSON:", prod);
+      const [res, sum, proofRes] = await Promise.all([
+        licenseService.getByProduct(id),
+        licenseService.getSummary(id),
+        licenseService.proofList()
+      ]);
 
       setLicenses(res.data?.data || []);
+      setProductName(res.data?.product?.name || "Produk");
       setSummary(sum.data?.counts || null);
-      setProductName(prod.data?.name || "Produk"); // 👈 ambil name
+      setProofs(proofRes.data?.data || []);
 
     } catch (err) {
+      console.error(err);
       showToast("error", err.message);
     }
     setLoading(false);
   };
+
 
 
 
@@ -475,7 +475,7 @@ export default function LicensesPage() {
           </button>
         </Modal>
       )}
-      
+
       {showProofModal && (
         <Modal onClose={() => setShowProofModal(false)} title="Riwayat Stock Proof">
           {proofs.length === 0 ? (
