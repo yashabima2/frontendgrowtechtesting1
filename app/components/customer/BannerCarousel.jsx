@@ -5,14 +5,14 @@ import { motion, useMotionValue, useTransform } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
 
-const GAP = 24
-const SPRING = { type: 'spring', stiffness: 260, damping: 30 }
-const VELOCITY_THRESHOLD = 500
+const GAP = 28
+const SPRING = { type: 'spring', stiffness: 220, damping: 26 }
 const DRAG_BUFFER = 80
+const VELOCITY_THRESHOLD = 500
 
 export default function BannerCarousel({
   banners = [],
-  baseWidth = 320,
+  baseWidth = 360,
   autoplay = true,
   autoplayDelay = 3500,
   pauseOnHover = true,
@@ -29,17 +29,10 @@ export default function BannerCarousel({
   const [position, setPosition] = useState(loop ? 1 : 0)
   const [hovered, setHovered] = useState(false)
   const [jumping, setJumping] = useState(false)
-  const [animating, setAnimating] = useState(false)
 
   const x = useMotionValue(0)
 
-  const rotateY = useTransform(
-    x,
-    [-trackOffset, 0, trackOffset],
-    [35, 0, -35]
-  )
-
-  // ================= INIT POSITION =================
+  // ================= INIT =================
   useEffect(() => {
     const start = loop ? 1 : 0
     setPosition(start)
@@ -58,20 +51,16 @@ export default function BannerCarousel({
     return () => clearInterval(timer)
   }, [hovered, autoplay, autoplayDelay, banners.length])
 
-  // ================= HANDLE LOOP =================
+  // ================= LOOP FIX =================
   const handleAnimationComplete = () => {
-    if (!loop) return setAnimating(false)
+    if (!loop) return
 
     if (position === itemsForRender.length - 1) {
       setJumping(true)
       setPosition(1)
       x.set(-1 * trackOffset)
 
-      requestAnimationFrame(() => {
-        setJumping(false)
-        setAnimating(false)
-      })
-      return
+      requestAnimationFrame(() => setJumping(false))
     }
 
     if (position === 0) {
@@ -80,17 +69,11 @@ export default function BannerCarousel({
       setPosition(target)
       x.set(-target * trackOffset)
 
-      requestAnimationFrame(() => {
-        setJumping(false)
-        setAnimating(false)
-      })
-      return
+      requestAnimationFrame(() => setJumping(false))
     }
-
-    setAnimating(false)
   }
 
-  // ================= DRAG END =================
+  // ================= DRAG =================
   const handleDragEnd = (_, info) => {
     const { offset, velocity } = info
 
@@ -108,7 +91,10 @@ export default function BannerCarousel({
   if (!banners.length) return null
 
   return (
-    <section className="relative w-full overflow-hidden py-20">
+    <section className="relative w-full overflow-hidden py-24">
+
+      {/* Background glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.12),transparent_60%)]" />
 
       <div
         className="relative"
@@ -116,7 +102,7 @@ export default function BannerCarousel({
         onMouseLeave={() => pauseOnHover && setHovered(false)}
       >
         <motion.div
-          className="flex cursor-grab active:cursor-grabbing"
+          className="flex justify-center"
           drag="x"
           dragConstraints={{ left: 0, right: 0 }}
           onDragEnd={handleDragEnd}
@@ -124,53 +110,71 @@ export default function BannerCarousel({
           transition={jumping ? { duration: 0 } : SPRING}
           style={{
             gap: GAP,
-            perspective: 1200,
             x,
+            perspective: 1600,
           }}
-          onAnimationStart={() => setAnimating(true)}
           onAnimationComplete={handleAnimationComplete}
         >
-          {itemsForRender.map((banner, i) => (
-            <motion.div
-              key={banner.id + '-' + i}
-              className="relative shrink-0"
-              style={{
-                width: itemWidth,
-                height: 260,
-                rotateY,
-              }}
-            >
-              <Link href={banner.link_url || '#'}>
-                <Image
-                  src={banner.image_url}
-                  alt={banner.title || 'Banner'}
-                  fill
-                  className="object-cover rounded-xl"
-                  unoptimized
-                  priority
-                />
-              </Link>
+          {itemsForRender.map((banner, i) => {
+            const isActive =
+              (loop ? i - 1 : i) === activeIndex
 
-              {/* Glow overlay */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/10 via-transparent to-cyan-400/10 rounded-xl" />
-            </motion.div>
-          ))}
+            return (
+              <motion.div
+                key={banner.id + '-' + i}
+                className="relative shrink-0"
+                animate={{
+                  scale: isActive ? 1 : 0.82,
+                  opacity: isActive ? 1 : 0.45,
+                  y: isActive ? 0 : 18,
+                }}
+                transition={{ duration: 0.45 }}
+                style={{
+                  width: itemWidth,
+                  height: 260,
+                  rotateY: isActive ? 0 : i < position ? 18 : -18,
+                }}
+              >
+                <Link href={banner.link_url || '#'}>
+                  <div className="relative w-full h-full rounded-2xl overflow-hidden">
+
+                    <Image
+                      src={banner.image_url}
+                      alt={banner.title || 'Banner'}
+                      fill
+                      priority
+                      unoptimized
+                      className="object-cover"
+                    />
+
+                    {/* Overlay gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-purple-500/10" />
+
+                    {/* Soft glow */}
+                    <div className="absolute inset-0 shadow-[0_0_40px_rgba(168,85,247,0.25)]" />
+
+                  </div>
+                </Link>
+              </motion.div>
+            )
+          })}
         </motion.div>
 
         {/* INDICATORS */}
-        <div className="flex justify-center mt-8 gap-3">
+        <div className="flex justify-center mt-10 gap-3">
           {banners.map((_, i) => (
             <motion.button
               key={i}
               onClick={() => setPosition(loop ? i + 1 : i)}
               animate={{
-                scale: activeIndex === i ? 1.4 : 1,
-                opacity: activeIndex === i ? 1 : 0.4,
+                width: activeIndex === i ? 28 : 10,
+                opacity: activeIndex === i ? 1 : 0.35,
               }}
-              className={`h-2 rounded-full transition-all ${
+              transition={{ duration: 0.3 }}
+              className={`h-[10px] rounded-full ${
                 activeIndex === i
-                  ? 'w-6 bg-purple-500'
-                  : 'w-2 bg-white/40'
+                  ? 'bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.9)]'
+                  : 'bg-white/40'
               }`}
             />
           ))}
