@@ -83,12 +83,12 @@ export default function ReferralSettingsPage() {
 
   const handleSaveCommission = async () => {
     const token = Cookies.get('token')
-    if (!settings || !token) return
+    if (!token) return
 
     setSavingCommission(true)
 
     try {
-      const res = await fetch(`${API}/api/v1/admin/referral-settings/${settings.id}`, {
+      const res = await fetch(`${API}/api/v1/admin/referral-settings`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -124,12 +124,12 @@ export default function ReferralSettingsPage() {
 
   const handleSaveWithdrawal = async () => {
     const token = Cookies.get('token')
-    if (!settings || !token) return
+    if (!token) return
 
     setSavingWithdrawal(true)
 
     try {
-      const res = await fetch(`${API}/api/v1/admin/referral-settings/${settings.id}`, {
+      const res = await fetch(`${API}/api/v1/admin/referral-settings`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
