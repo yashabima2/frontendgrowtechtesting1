@@ -8,15 +8,34 @@ const API = process.env.NEXT_PUBLIC_API_URL
 
 export default function ReferralSettingsPage() {
   const [loading, setLoading] = useState(true)
+  const [savingCommission, setSavingCommission] = useState(false)
+  const [savingWithdrawal, setSavingWithdrawal] = useState(false)
+
   const [settings, setSettings] = useState(null)
 
   const [commissionType, setCommissionType] = useState('percent')
   const [commissionValue, setCommissionValue] = useState('')
   const [minWithdrawal, setMinWithdrawal] = useState('')
 
+  const [toast, setToast] = useState(null)
+
   useEffect(() => {
     fetchSettings()
   }, [])
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type })
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  const formatRupiah = (value) => {
+    const number = value.replace(/\D/g, '')
+    return new Intl.NumberFormat('id-ID').format(number)
+  }
+
+  const unformatRupiah = (value) => {
+    return value.replace(/\./g, '')
+  }
 
   const fetchSettings = async () => {
     try {
@@ -28,17 +47,21 @@ export default function ReferralSettingsPage() {
         setSettings(data)
 
         setCommissionType(data.commission_type)
-        setCommissionValue(data.commission_value)
-        setMinWithdrawal(data.min_withdrawal)
+        setCommissionValue(String(data.commission_value))
+        setMinWithdrawal(formatRupiah(String(data.min_withdrawal)))
       }
     } catch (err) {
       console.error('Failed to fetch referral settings:', err)
+      showToast('Gagal memuat referral settings', 'error')
     } finally {
       setLoading(false)
     }
   }
 
   const handleSaveCommission = async () => {
+    if (!settings) return
+    setSavingCommission(true)
+
     try {
       const res = await fetch(`${API}/api/v1/admin/referral-settings/${settings.id}`, {
         method: 'PUT',
@@ -54,15 +77,22 @@ export default function ReferralSettingsPage() {
       const json = await res.json()
       if (json.success) {
         fetchSettings()
-        alert('Komisi berhasil diperbarui')
+        showToast('Komisi berhasil diperbarui')
+      } else {
+        showToast('Gagal menyimpan komisi', 'error')
       }
     } catch (err) {
       console.error(err)
-      alert('Gagal menyimpan perubahan')
+      showToast('Terjadi kesalahan server', 'error')
+    } finally {
+      setSavingCommission(false)
     }
   }
 
   const handleSaveWithdrawal = async () => {
+    if (!settings) return
+    setSavingWithdrawal(true)
+
     try {
       const res = await fetch(`${API}/api/v1/admin/referral-settings/${settings.id}`, {
         method: 'PUT',
@@ -70,27 +100,62 @@ export default function ReferralSettingsPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          min_withdrawal: Number(minWithdrawal),
+          min_withdrawal: Number(unformatRupiah(minWithdrawal)),
         }),
       })
 
       const json = await res.json()
       if (json.success) {
         fetchSettings()
-        alert('Minimum withdrawal berhasil diperbarui')
+        showToast('Minimum withdrawal berhasil diperbarui')
+      } else {
+        showToast('Gagal menyimpan minimum withdrawal', 'error')
       }
     } catch (err) {
       console.error(err)
-      alert('Gagal menyimpan perubahan')
+      showToast('Terjadi kesalahan server', 'error')
+    } finally {
+      setSavingWithdrawal(false)
     }
   }
 
   if (loading) {
-    return <div className="p-8 text-white">Loading referral settings...</div>
+    return (
+      <div className="p-8 text-white">
+        <h1 className="text-4xl font-bold mb-2">Admin Referral</h1>
+        <ReferralTabs />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {[1, 2].map((i) => (
+            <div
+              key={i}
+              className="rounded-2xl border border-purple-600/60 bg-black p-6 animate-pulse"
+            >
+              <div className="h-6 bg-gray-700 rounded w-1/2 mb-6" />
+              <div className="h-4 bg-gray-700 rounded w-1/3 mb-4" />
+              <div className="h-10 bg-gray-700 rounded mb-4" />
+              <div className="h-16 bg-gray-700 rounded mb-4" />
+              <div className="h-10 bg-gray-700 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="p-8 text-white">
+      {/* Toast */}
+      {toast && (
+        <div
+          className={`fixed top-5 right-5 px-4 py-3 rounded-lg shadow-lg text-sm z-50
+            ${toast.type === 'error' ? 'bg-red-600' : 'bg-green-600'}
+          `}
+        >
+          {toast.message}
+        </div>
+      )}
+
       <h1 className="text-4xl font-bold mb-2">Admin Referral</h1>
       <ReferralTabs />
 
@@ -133,7 +198,7 @@ export default function ReferralSettingsPage() {
           <input
             type="text"
             value={commissionValue}
-            onChange={(e) => setCommissionValue(e.target.value)}
+            onChange={(e) => setCommissionValue(e.target.value.replace(/\D/g, ''))}
             className="w-full bg-white text-black rounded-lg px-4 py-2 mb-3"
           />
 
@@ -141,7 +206,7 @@ export default function ReferralSettingsPage() {
             Komisi akan diterapkan untuk semua produk. Nilai saat ini:{' '}
             {commissionType === 'percent'
               ? `${commissionValue}%`
-              : `Rp ${Number(commissionValue).toLocaleString('id-ID')}`}
+              : `Rp ${Number(commissionValue || 0).toLocaleString('id-ID')}`}
           </p>
 
           <div className="bg-white text-black p-3 rounded-lg text-sm mb-4">
@@ -149,15 +214,16 @@ export default function ReferralSettingsPage() {
             Jika pembelian Rp 100.000 dengan komisi {commissionValue}
             {commissionType === 'percent' ? '%' : ' (Rp)'} ={' '}
             {commissionType === 'percent'
-              ? `Rp ${(100000 * commissionValue / 100).toLocaleString('id-ID')}`
-              : `Rp ${Number(commissionValue).toLocaleString('id-ID')}`}
+              ? `Rp ${(100000 * (commissionValue || 0) / 100).toLocaleString('id-ID')}`
+              : `Rp ${Number(commissionValue || 0).toLocaleString('id-ID')}`}
           </div>
 
           <button
             onClick={handleSaveCommission}
-            className="w-full bg-purple-700 hover:bg-purple-600 py-2 rounded-lg"
+            disabled={savingCommission}
+            className="w-full bg-purple-700 hover:bg-purple-600 py-2 rounded-lg disabled:opacity-50"
           >
-            Simpan Perubahan
+            {savingCommission ? 'Menyimpan...' : 'Simpan Perubahan'}
           </button>
         </motion.div>
 
@@ -180,7 +246,7 @@ export default function ReferralSettingsPage() {
             <input
               type="text"
               value={minWithdrawal}
-              onChange={(e) => setMinWithdrawal(e.target.value)}
+              onChange={(e) => setMinWithdrawal(formatRupiah(e.target.value))}
               className="flex-1 text-black px-3 py-2 rounded-r-lg"
             />
           </div>
@@ -192,14 +258,15 @@ export default function ReferralSettingsPage() {
           <div className="bg-white text-black p-3 rounded-lg text-sm mb-4">
             <b>Informasi:</b><br />
             User dengan saldo komisi lebih dari Rp{' '}
-            {Number(minWithdrawal).toLocaleString('id-ID')} dapat melakukan withdraw.
+            {Number(unformatRupiah(minWithdrawal || '0')).toLocaleString('id-ID')} dapat melakukan withdraw.
           </div>
 
           <button
             onClick={handleSaveWithdrawal}
-            className="w-full bg-purple-700 hover:bg-purple-600 py-2 rounded-lg"
+            disabled={savingWithdrawal}
+            className="w-full bg-purple-700 hover:bg-purple-600 py-2 rounded-lg disabled:opacity-50"
           >
-            Simpan Perubahan
+            {savingWithdrawal ? 'Menyimpan...' : 'Simpan Perubahan'}
           </button>
         </motion.div>
       </div>
