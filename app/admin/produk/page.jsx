@@ -523,7 +523,7 @@ export default function ProdukPage() {
             exit={{ opacity: 0 }}
             onClick={() => !isDeleting && setShowDeleteModal(false)}
             className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50"
-          >
+          >R
             <motion.div
               onClick={(e) => e.stopPropagation()}
               initial={{ scale: 0.85, opacity: 0 }}
@@ -585,7 +585,7 @@ export default function ProdukPage() {
               className="bg-gradient-to-b from-purple-950 to-black border border-purple-500/20 rounded-2xl p-6 w-[480px] shadow-[0_0_45px_rgba(168,85,247,0.25)]">
               <div className="flex justify-between mb-4">
                 <h2 className="text-white font-semibold text-lg">
-                  ✨ Edit Produk
+                  Edit Produk
                 </h2>
 
                 <button
@@ -617,7 +617,7 @@ export default function ProdukPage() {
                 <div className="grid grid-cols-3 gap-2">
                   {["member_price", "reseller_price", "vip_price"].map((field) => (
                     <div key={field} className="relative">
-                      <span className="absolute left-3 top-2 text-gray-500">Rp</span>
+                      {/* <span className="absolute left-3 top-2 text-gray-500">Rp</span> */}
                       <input
                         value={editForm[field]}
                         onChange={(e) =>
