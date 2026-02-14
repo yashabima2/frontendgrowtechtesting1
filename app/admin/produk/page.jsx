@@ -234,7 +234,7 @@ export default function ProdukPage() {
             <tr className="border-b border-white/10">
               <th className="py-3 text-center">Nama</th>
               <th className="py-3 text-center">Durasi</th>
-              <th className="py-3 text-center">Stock</th>
+              {/* <th className="py-3 text-center">Stock</th> */}
               <th className="py-3 text-center">Harga Member</th>
               <th className="py-3 text-center">Harga Reseller</th>
               <th className="py-3 text-center">Harga VIP</th>
