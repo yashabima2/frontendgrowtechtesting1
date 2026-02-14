@@ -258,9 +258,7 @@ export default function ProdukPage() {
     return new Intl.NumberFormat("id-ID").format(number);
   };
 
-  const parseRupiah = (value) => {
-    return Number(value.replace(/\D/g, ""));
-  };
+
 
   return (
     <motion.div
