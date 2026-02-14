@@ -268,16 +268,31 @@ export default function ProdukPage() {
                     <td className="py-3 text-center">{p.duration_days} hari</td>
                     <td className="py-3 text-center">
                       {licenseSummary[p.id] ? (
-                        <span className="
-                          px-3 py-1 rounded-lg
-                          bg-purple-900/40
-                          text-purple-300
-                          border border-purple-500/30
-                          shadow-[0_0_10px_rgba(168,85,247,0.35)]
-                          text-xs font-semibold
-                        ">
-                          {licenseSummary[p.id].total}
-                        </span>
+                        <div className="flex flex-col items-center leading-tight">
+                          
+                          {/* TOTAL */}
+                          <span className="
+                            px-3 py-1 rounded-lg
+                            bg-purple-900/40
+                            text-purple-300
+                            border border-purple-500/30
+                            shadow-[0_0_10px_rgba(168,85,247,0.35)]
+                            text-xs font-semibold
+                          ">
+                            Total: {licenseSummary[p.id].total}
+                          </span>
+
+                          {/* AVAILABLE */}
+                          <span className="text-xs text-green-400 mt-1">
+                            Avl: {licenseSummary[p.id].available}
+                          </span>
+
+                          {/* TAKEN */}
+                          <span className="text-xs text-yellow-400">
+                            Taken: {licenseSummary[p.id].taken}
+                          </span>
+
+                        </div>
                       ) : "-"}
                     </td>
                     <td className="py-3 text-center">
