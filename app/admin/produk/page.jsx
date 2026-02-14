@@ -528,14 +528,8 @@ export default function ProdukPage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.85, opacity: 0 }}
               transition={{ type: "spring", stiffness: 280, damping: 22 }}
-              className="bg-gradient-to-b from-purple-950 to-black
-                        border border-purple-500/20
-                        rounded-2xl p-8 w-[420px]
-                        shadow-[0_0_45px_rgba(168,85,247,0.35)]"
-            >
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full
-                              bg-red-500/10 border border-red-500/30
-                              flex items-center justify-center text-red-500 text-3xl">
+              className="bg-gradient-to-b from-purple-950 to-black border border-purple-500/20 rounded-2xl p-8 w-[420px] shadow-[0_0_45px_rgba(168,85,247,0.35)]">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 text-3xl">
                 ✖
               </div>
 
@@ -586,11 +580,7 @@ export default function ProdukPage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: "spring", stiffness: 260, damping: 20 }}
-              className="bg-gradient-to-b from-purple-950 to-black
-                        border border-purple-500/20
-                        rounded-2xl p-6 w-[480px]
-                        shadow-[0_0_45px_rgba(168,85,247,0.25)]"
-            >
+              className="bg-gradient-to-b from-purple-950 to-black border border-purple-500/20 rounded-2xl p-6 w-[480px] shadow-[0_0_45px_rgba(168,85,247,0.25)]">
               <div className="flex justify-between mb-4">
                 <h2 className="text-white font-semibold text-lg">
                   ✨ Edit Produk
