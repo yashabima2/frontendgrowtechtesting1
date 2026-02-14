@@ -269,7 +269,9 @@ export default function ProdukPage() {
   };
 
   const formatRupiah = (value) => {
-    const number = value.replace(/\D/g, "");
+    if (value === null || value === undefined) return "";
+
+    const number = value.toString().replace(/\D/g, "");
     return new Intl.NumberFormat("id-ID").format(number);
   };
 
@@ -493,7 +495,7 @@ export default function ProdukPage() {
         </table>
 
         {/* PAGINATION */}
-        {!loading && meta && (
+        {!loading && meta?.last_page && (
           <div className="flex justify-end gap-2 mt-6">
             {Array.from({ length: meta.last_page }, (_, i) => (
               <button
