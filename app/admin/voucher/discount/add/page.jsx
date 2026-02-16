@@ -1,12 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Cookies from 'js-cookie'
 
 export default function AddDiscountPage() {
   const API = process.env.NEXT_PUBLIC_API_URL
   const router = useRouter()
+
+  const [subcategories, setSubcategories] = useState([])
+  const [products, setProducts] = useState([])
 
   const [form, setForm] = useState({
     name: '',
@@ -15,10 +18,36 @@ export default function AddDiscountPage() {
     ends_at: '',
     discount_type: 'percent',
     discount_value: 0,
-    subcategory_id: '',
+    min_order_amount: '',
+    max_discount_amount: '',
+    usage_limit_total: '',
+    usage_limit_per_user: '',
     priority: 0,
     stack_policy: 'stackable',
+    targets: [],
   })
+
+  useEffect(() => {
+    fetch(`${API}/api/v1/admin/subcategories`, {
+      headers: { Authorization: `Bearer ${Cookies.get('token')}` },
+    })
+      .then(res => res.json())
+      .then(json => setSubcategories(json.data || []))
+
+    fetch(`${API}/api/v1/admin/products`, {
+      headers: { Authorization: `Bearer ${Cookies.get('token')}` },
+    })
+      .then(res => res.json())
+      .then(json => setProducts(json.data || []))
+  }, [])
+
+  const addTarget = (type, id) => {
+    if (!id) return
+    setForm(prev => ({
+      ...prev,
+      targets: [...prev.targets, { type, id: Number(id) }],
+    }))
+  }
 
   const handleSubmit = async () => {
     const res = await fetch(`${API}/api/v1/admin/discount-campaigns`, {
@@ -39,43 +68,27 @@ export default function AddDiscountPage() {
     <div className="p-10 max-w-5xl mx-auto text-white">
       <h1 className="text-4xl font-bold mb-10">Tambah Discount</h1>
 
-      <div className="border border-purple-700 rounded-2xl p-8 bg-black/60 grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 gap-6">
         <Input label="Nama Discount" onChange={v => setForm({ ...form, name: v })} />
+        <Input label="Discount Value" type="number" onChange={v => setForm({ ...form, discount_value: Number(v) })} />
+        <Select label="Discount Type" options={['percent', 'amount']} onChange={v => setForm({ ...form, discount_type: v })} />
+        <Input label="Priority" type="number" onChange={v => setForm({ ...form, priority: Number(v) })} />
+        <Select label="Stack Policy" options={['stackable', 'exclusive']} onChange={v => setForm({ ...form, stack_policy: v })} />
 
-        <Input label="Discount Value" type="number"
-          onChange={v => setForm({ ...form, discount_value: Number(v) })} />
+        <Select
+          label="Tambah Target Subcategory"
+          options={subcategories.map(s => ({ label: s.name, value: s.id }))}
+          onChange={v => addTarget('subcategory', v)}
+        />
 
-        <Input label="Subcategory ID" type="number"
-          onChange={v => setForm({ ...form, subcategory_id: Number(v) })} />
-
-        <Input label="Priority" type="number"
-          onChange={v => setForm({ ...form, priority: Number(v) })} />
-
-        <Select label="Discount Type"
-          options={['percent', 'amount']}
-          onChange={v => setForm({ ...form, discount_type: v })} />
-
-        <Select label="Stack Policy"
-          options={['stackable', 'exclusive']}
-          onChange={v => setForm({ ...form, stack_policy: v })} />
-
-        <Input label="Starts At" type="datetime-local"
-          onChange={v => setForm({ ...form, starts_at: v })} />
-
-        <Input label="Ends At" type="datetime-local"
-          onChange={v => setForm({ ...form, ends_at: v })} />
-
-        <label className="col-span-2 flex gap-2">
-          <input
-            type="checkbox"
-            checked={form.enabled}
-            onChange={e => setForm({ ...form, enabled: e.target.checked })}
-          />
-          Enabled
-        </label>
+        <Select
+          label="Tambah Target Product"
+          options={products.map(p => ({ label: p.name, value: p.id }))}
+          onChange={v => addTarget('product', v)}
+        />
 
         <button onClick={handleSubmit} className="btn-primary col-span-2">
-          Tambah Discount
+          Simpan Discount
         </button>
       </div>
     </div>
@@ -97,7 +110,10 @@ function Select({ label, options, onChange }) {
     <div>
       <label className="text-sm text-gray-400">{label}</label>
       <select className="input w-full" onChange={e => onChange(e.target.value)}>
-        {options.map(o => <option key={o}>{o}</option>)}
+        <option value="">Pilih</option>
+        {options.map(o =>
+          <option key={o.value} value={o.value}>{o.label}</option>
+        )}
       </select>
     </div>
   )

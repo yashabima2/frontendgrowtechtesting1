@@ -21,18 +21,12 @@ export default function DiscountPage() {
 
       const res = await fetch(`${API}/api/v1/admin/discount-campaigns`, {
         headers: {
-          Accept: 'application/json',
           Authorization: `Bearer ${Cookies.get('token')}`,
         },
       })
 
       const json = await res.json()
-
-      const list = Array.isArray(json.data)
-        ? json.data
-        : Array.isArray(json.data?.data)
-        ? json.data.data
-        : []
+      const list = json.data?.data || json.data || []
 
       setDiscounts(list)
     } catch (err) {
@@ -46,16 +40,6 @@ export default function DiscountPage() {
     loadDiscounts()
   }, [])
 
-  const handleDelete = async () => {
-    await fetch(`${API}/api/v1/admin/discount-campaigns/${selectedId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${Cookies.get('token')}` },
-    })
-
-    setOpenDelete(false)
-    loadDiscounts()
-  }
-
   const toggleEnabled = async (d) => {
     await fetch(`${API}/api/v1/admin/discount-campaigns/${d.id}`, {
       method: 'PATCH',
@@ -66,6 +50,16 @@ export default function DiscountPage() {
       body: JSON.stringify({ enabled: !d.enabled }),
     })
 
+    loadDiscounts()
+  }
+
+  const handleDelete = async () => {
+    await fetch(`${API}/api/v1/admin/discount-campaigns/${selectedId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${Cookies.get('token')}` },
+    })
+
+    setOpenDelete(false)
     loadDiscounts()
   }
 
@@ -83,26 +77,27 @@ export default function DiscountPage() {
         </Link>
       </motion.div>
 
-      <div className="mb-6">
-        <VoucherTabs />
-      </div>
+      <VoucherTabs />
 
-      <div className="rounded-2xl border border-purple-900/40 overflow-x-auto">
+      <div className="rounded-2xl border border-purple-900/40 overflow-x-auto mt-6">
         <table className="w-full text-sm">
           <thead className="bg-purple-900/20 text-gray-300">
             <tr>
               <th className="p-3">Nama</th>
               <th>Nominal</th>
-              <th>Tipe</th>
+              <th>Type</th>
               <th>Value</th>
-              <th>Kategori</th>
-              <th>Sub</th>
-              <th>Mulai</th>
-              <th>Selesai</th>
+              <th>Min Order</th>
+              <th>Max Discount</th>
+              <th>Starts</th>
+              <th>Ends</th>
               <th>Priority</th>
               <th>Stack</th>
+              <th>Usage Total</th>
+              <th>Per User</th>
               <th>Status</th>
               <th>Enabled</th>
+              <th>Targets</th>
               <th className="text-right pr-4">Aksi</th>
             </tr>
           </thead>
@@ -110,7 +105,7 @@ export default function DiscountPage() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan="13" className="p-6 text-center text-gray-400">
+                <td colSpan="16" className="p-6 text-center text-gray-400">
                   Loading...
                 </td>
               </tr>
@@ -125,12 +120,14 @@ export default function DiscountPage() {
                 <td>{d.nominal}</td>
                 <td>{d.discount_type}</td>
                 <td>{d.discount_value}</td>
-                <td>{d.kategori_produk || '-'}</td>
-                <td>{d.sub_kategori || '-'}</td>
+                <td>{d.min_order_amount ?? '-'}</td>
+                <td>{d.max_discount_amount ?? '-'}</td>
                 <td>{formatDate(d.starts_at)}</td>
                 <td>{formatDate(d.ends_at)}</td>
                 <td>{d.priority}</td>
                 <td>{d.stack_policy}</td>
+                <td>{d.usage_limit_total ?? '-'}</td>
+                <td>{d.usage_limit_per_user ?? '-'}</td>
                 <td>{d.status}</td>
 
                 <td>
@@ -140,7 +137,11 @@ export default function DiscountPage() {
                 </td>
 
                 <td>
-                  <Badge active={d.enabled} />
+                  {d.targets?.map(t => (
+                    <span key={`${t.type}-${t.id}`} className="text-xs block">
+                      {t.type} #{t.id}
+                    </span>
+                  ))}
                 </td>
 
                 <td className="flex justify-end gap-2 p-3">
@@ -190,5 +191,5 @@ function Badge({ active }) {
 
 function formatDate(date) {
   if (!date) return '-'
-  return new Date(date).toLocaleDateString('id-ID')
+  return new Date(date).toLocaleString('id-ID')
 }
