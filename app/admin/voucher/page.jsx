@@ -18,20 +18,28 @@ export default function VoucherPage() {
   return (
     <div className="p-10">
       {/* TITLE */}
-      <div className="flex justify-between items-center mb-8">
+      <motion.button className="btn-purple-solid flex justify-between items-center mb-8" whileHover={{ scale:1.05}} whileTap={{ scale:0.95 }} transition={{ type: 'spring', stiffness: 460, damping: 18 }}>
         <h1 className="text-4xl font-bold">Manajemen Voucher</h1>
         <Link href="/admin/voucher/add" className="btn-primary">
           + Tambah Voucher
         </Link>
-      </div>
+      </motion.button>
 
       {/* TAB */}
       <div className="flex justify-between items-center mb-8">
-        <div className="flex gap-3">
-          <button className="btn-primary">Voucher</button>
+        <div className="flex gap-3 mb-6">
+          <Link
+            href="/admin/voucher"
+            className="px-6 py-2 rounded-lg text-sm font-medium transition
+              bg-purple-700 hover:bg-purple-600"
+          >
+            Voucher
+          </Link>
+
           <Link
             href="/admin/voucher/discount"
-            className="px-6 py-2 rounded-lg border border-purple-600"
+            className="px-6 py-2 rounded-lg text-sm font-medium transition
+              border border-purple-600 hover:bg-purple-900/40"
           >
             Discount
           </Link>

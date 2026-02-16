@@ -33,12 +33,12 @@ export default function DiscountPage() {
   return (
     <div className="p-10">
       {/* ================= HEADER ================= */}
-      <div className="flex justify-between items-center mb-10">
+      <motion.button className="btn-purple-solid flex justify-between items-center mb-10" whileHover={{ scale:1.05}} whileTap={{ scale:0.95 }} transition={{ type: 'spring', stiffness: 460, damping: 18 }}>
         <h1 className="text-4xl font-bold">Manajemen Discount</h1>
         <Link href="/admin/voucher/discount/add" className="btn-primary">
           + Tambah Discount
         </Link>
-      </div>
+      </motion.button>
 
       {/* ================= TAB ================= */}
       <div className="flex gap-3 mb-8">
