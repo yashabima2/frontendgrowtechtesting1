@@ -1,22 +1,101 @@
 'use client'
+
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import Cookies from 'js-cookie'
 import ConfirmDeleteModal from '../../../components/admin/ConfirmDeleteModal'
-import { motion } from 'framer-motion'
 import VoucherTabs from '../components/VoucherTabs'
+import { motion } from 'framer-motion'
 
 export default function DiscountPage() {
-  const discounts = [
-    { id: 1, name: 'Diskon Natal', value: '2%', category: 'Cloud Phone', sub: 'Premium', active: true },
-    { id: 2, name: 'Diskon VPN', value: 'Rp 5.000', category: 'VPN', sub: 'Premium', active: false },
-  ]
+  const API = process.env.NEXT_PUBLIC_API_URL
 
+  const [discounts, setDiscounts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [selectedId, setSelectedId] = useState(null)
   const [openDelete, setOpenDelete] = useState(false)
+
+  const loadDiscounts = async () => {
+    try {
+      setLoading(true)
+
+      const res = await fetch(`${API}/api/v1/admin/discount-campaigns`, {
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${Cookies.get('token')}`,
+        },
+      })
+
+      const json = await res.json()
+
+      const list = Array.isArray(json.data)
+        ? json.data
+        : Array.isArray(json.data?.data)
+        ? json.data.data
+        : []
+
+      setDiscounts(list)
+    } catch (err) {
+      console.error('LOAD DISCOUNTS ERROR:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadDiscounts()
+  }, [])
+
+  const handleDelete = async () => {
+    try {
+      await fetch(
+        `${API}/api/v1/admin/discount-campaigns/${selectedId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${Cookies.get('token')}`,
+          },
+        }
+      )
+
+      setOpenDelete(false)
+      setSelectedId(null)
+      loadDiscounts()
+    } catch {
+      alert('Gagal menghapus discount')
+    }
+  }
+
+  const toggleEnabled = async (d) => {
+    try {
+      const res = await fetch(
+        `${API}/api/v1/admin/discount-campaigns/${d.id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${Cookies.get('token')}`,
+          },
+          body: JSON.stringify({
+            enabled: !d.enabled,
+          }),
+        }
+      )
+
+      if (!res.ok) throw new Error()
+
+      setDiscounts(prev =>
+        prev.map(x =>
+          x.id === d.id ? { ...x, enabled: !x.enabled } : x
+        )
+      )
+    } catch {
+      alert('Gagal update status')
+    }
+  }
 
   return (
     <div className="p-10 text-white">
-
-      {/* ================= HEADER ================= */}
       <motion.div
         className="flex justify-between items-center mb-8"
         initial={{ opacity: 0, y: -10 }}
@@ -29,15 +108,11 @@ export default function DiscountPage() {
         </Link>
       </motion.div>
 
-      {/* ================= TAB ================= */}
       <div className="mb-6">
         <VoucherTabs />
       </div>
 
-      {/* ================= TABLE ================= */}
       <div className="rounded-2xl border border-purple-900/40 overflow-hidden">
-        
-        {/* Header */}
         <div className="grid grid-cols-6 bg-purple-900/20 px-6 py-3 text-sm text-gray-300 font-medium">
           <div>Nama Discount</div>
           <div>Nominal</div>
@@ -47,19 +122,30 @@ export default function DiscountPage() {
           <div className="text-right">Aksi</div>
         </div>
 
-        {/* Rows */}
+        {loading && (
+          <div className="p-6 text-gray-400">Loading...</div>
+        )}
+
+        {!loading && discounts.length === 0 && (
+          <div className="p-6 text-gray-400">
+            Belum ada discount campaign
+          </div>
+        )}
+
         {discounts.map(d => (
           <div
             key={d.id}
             className="grid grid-cols-6 items-center px-6 py-4 border-t border-purple-900/30 hover:bg-purple-900/10 transition"
           >
-            <div className="font-medium">{d.name}</div>
-            <div>{d.value}</div>
-            <div>{d.category}</div>
-            <div>{d.sub}</div>
+            <div className="font-medium">{d.nama_discount}</div>
+            <div>{d.nominal}</div>
+            <div>{d.kategori_produk || '-'}</div>
+            <div>{d.sub_kategori || '-'}</div>
 
             <div>
-              <StatusBadge active={d.active} />
+              <button onClick={() => toggleEnabled(d)}>
+                <StatusBadge active={d.enabled} />
+              </button>
             </div>
 
             <div className="flex justify-end gap-2">
@@ -71,7 +157,10 @@ export default function DiscountPage() {
               </Link>
 
               <button
-                onClick={() => setOpenDelete(true)}
+                onClick={() => {
+                  setSelectedId(d.id)
+                  setOpenDelete(true)
+                }}
                 className="action-btn bg-red-600 hover:bg-red-500"
               >
                 🗑
@@ -84,10 +173,7 @@ export default function DiscountPage() {
       <ConfirmDeleteModal
         open={openDelete}
         onClose={() => setOpenDelete(false)}
-        onConfirm={() => {
-          setOpenDelete(false)
-          console.log('delete confirmed')
-        }}
+        onConfirm={handleDelete}
       />
     </div>
   )
