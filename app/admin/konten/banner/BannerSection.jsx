@@ -11,10 +11,14 @@ export default function BannerSection() {
   const API = process.env.NEXT_PUBLIC_API_URL
 
   const [banners, setBanners] = useState([])
+  const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewImage, setPreviewImage] = useState(null)
   const [editing, setEditing] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [newImageUploaded, setNewImageUploaded] = useState(false)
+  const [draggedItem, setDraggedItem] = useState(null)
 
   const SUPABASE_PUBLIC_BASE =
     'https://jleoptqwzrkqtklhmpdc.supabase.co/storage/v1/object/public/banners'
@@ -34,8 +38,9 @@ export default function BannerSection() {
   /* ================= LOAD ================= */
   const loadBanners = async () => {
     try {
+      setLoading(true)
+
       const res = await fetch(`${API}/api/v1/admin/banners`, {
-        method: 'GET',
         headers: {
           Accept: 'application/json',
           Authorization: `Bearer ${Cookies.get('token')}`,
@@ -53,12 +58,84 @@ export default function BannerSection() {
       setBanners(list)
     } catch (err) {
       console.error('LOAD BANNERS ERROR:', err)
+    } finally {
+      setLoading(false)
     }
   }
 
   useEffect(() => {
     loadBanners()
   }, [])
+
+  /* ================= TOGGLE ACTIVE ================= */
+  const toggleActive = async (banner) => {
+    try {
+      const res = await fetch(`${API}/api/v1/admin/banners/${banner.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${Cookies.get('token')}`,
+        },
+        body: JSON.stringify({
+          is_active: !banner.is_active,
+        }),
+      })
+
+      if (!res.ok) throw new Error()
+
+      setBanners((prev) =>
+        prev.map((b) =>
+          b.id === banner.id ? { ...b, is_active: !b.is_active } : b
+        )
+      )
+    } catch {
+      alert('Gagal update status')
+    }
+  }
+
+  /* ================= DRAG REORDER ================= */
+  const handleDragStart = (banner) => {
+    setDraggedItem(banner)
+  }
+
+  const handleDrop = async (targetBanner) => {
+    if (!draggedItem || draggedItem.id === targetBanner.id) return
+
+    const updated = [...banners]
+    const fromIndex = updated.findIndex((b) => b.id === draggedItem.id)
+    const toIndex = updated.findIndex((b) => b.id === targetBanner.id)
+
+    const [moved] = updated.splice(fromIndex, 1)
+    updated.splice(toIndex, 0, moved)
+
+    // Recalculate sort_order
+    const reordered = updated.map((b, i) => ({
+      ...b,
+      sort_order: i + 1,
+    }))
+
+    setBanners(reordered)
+
+    try {
+      await fetch(`${API}/api/v1/admin/banners/reorder`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${Cookies.get('token')}`,
+        },
+        body: JSON.stringify({
+          banners: reordered.map((b) => ({
+            id: b.id,
+            sort_order: b.sort_order,
+          })),
+        }),
+      })
+    } catch {
+      alert('Gagal reorder banner')
+    }
+
+    setDraggedItem(null)
+  }
 
   /* ================= SIGNED UPLOAD ================= */
   const handleImageUpload = async (file) => {
@@ -70,13 +147,12 @@ export default function BannerSection() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Accept: 'application/json',
           Authorization: `Bearer ${Cookies.get('token')}`,
         },
         body: JSON.stringify({ mime: file.type }),
       })
 
-      if (!res.ok) throw new Error('Gagal mendapatkan signed URL')
+      if (!res.ok) throw new Error('Signed URL gagal')
 
       const { data } = await res.json()
 
@@ -86,26 +162,7 @@ export default function BannerSection() {
         body: file,
       })
 
-      if (!upload.ok) throw new Error('Upload gambar gagal')
-
-      // Jika edit banner → update image_path di BE
-      if (editing?.id) {
-        const patch = await fetch(
-          `${API}/api/v1/admin/banners/${editing.id}/image`,
-          {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              Accept: 'application/json',
-              Authorization: `Bearer ${Cookies.get('token')}`,
-            },
-            body: JSON.stringify({ image_path: data.path }),
-          }
-        )
-
-        if (!patch.ok)
-          throw new Error('Gagal menyimpan image_path ke database')
-      }
+      if (!upload.ok) throw new Error('Upload gagal')
 
       setForm((prev) => ({
         ...prev,
@@ -115,7 +172,6 @@ export default function BannerSection() {
 
       setNewImageUploaded(true)
     } catch (err) {
-      console.error(err)
       alert(err.message)
     } finally {
       setUploading(false)
@@ -149,24 +205,19 @@ export default function BannerSection() {
         method,
         headers: {
           'Content-Type': 'application/json',
-          Accept: 'application/json',
           Authorization: `Bearer ${Cookies.get('token')}`,
         },
         body: JSON.stringify(payload),
       })
 
-      if (!res.ok) {
-        console.error(await res.text())
-        alert('Gagal menyimpan banner')
-        return
-      }
+      if (!res.ok) throw new Error()
 
       setModalOpen(false)
       setEditing(null)
       setNewImageUploaded(false)
       loadBanners()
-    } catch (err) {
-      console.error('SUBMIT ERROR:', err)
+    } catch {
+      alert('Gagal menyimpan banner')
     }
   }
 
@@ -174,16 +225,12 @@ export default function BannerSection() {
   const handleDelete = async (id) => {
     if (!confirm('Hapus banner ini?')) return
 
-    try {
-      await fetch(`${API}/api/v1/admin/banners/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${Cookies.get('token')}` },
-      })
+    await fetch(`${API}/api/v1/admin/banners/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${Cookies.get('token')}` },
+    })
 
-      loadBanners()
-    } catch (err) {
-      console.error('DELETE ERROR:', err)
-    }
+    loadBanners()
   }
 
   const openEdit = (b) => {
@@ -191,27 +238,25 @@ export default function BannerSection() {
     setNewImageUploaded(false)
 
     setForm({
-      image_path: b.image_path || '',
+      image_path: b.image_path,
       sort_order: b.sort_order,
       is_active: b.is_active,
-      image_url: b.image_path ? getBannerImageUrl(b.image_path) : '',
+      image_url: getBannerImageUrl(b.image_path),
     })
 
     setModalOpen(true)
   }
 
+  const openPreview = (image) => {
+    setPreviewImage(image)
+    setPreviewOpen(true)
+  }
+
   return (
     <>
       <SectionCard title="Manajemen Banner">
-        <div
-          className="
-            rounded-2xl
-            border border-purple-600/60
-            bg-black
-            p-6
-            shadow-[0_0_25px_rgba(168,85,247,0.15)]
-          "
-        >
+        <div className="rounded-2xl border border-purple-600/60 bg-black p-6 shadow-[0_0_25px_rgba(168,85,247,0.15)]">
+          
           {/* HEADER */}
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold">Daftar Banner</h2>
@@ -219,10 +264,9 @@ export default function BannerSection() {
             <button
               onClick={() => {
                 setEditing(null)
-                setNewImageUploaded(false)
                 setForm({
                   image_path: '',
-                  sort_order: 0,
+                  sort_order: banners.length + 1,
                   is_active: true,
                   image_url: '',
                 })
@@ -234,145 +278,117 @@ export default function BannerSection() {
             </button>
           </div>
 
-          {/* ================= DESKTOP TABLE ================= */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-sm border-collapse">
-              <thead className="border-b border-purple-700 text-gray-300">
-                <tr>
-                  <th className="py-3 text-center">Preview</th>
-                  <th className="py-3 text-center">Urutan</th>
-                  <th className="py-3 text-center">Status</th>
-                  <th className="py-3 text-center">Aksi</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {banners.map((b) => (
-                  <tr
-                    key={b.id}
-                    className="border-b border-purple-800/40 hover:bg-purple-700/10 transition"
-                  >
-                    <td className="py-3">
-                      <img
-                        src={getBannerImageUrl(b.image_path)}
-                        className="h-14 mx-auto rounded-lg object-cover"
-                      />
-                    </td>
-
-                    <td className="text-center font-medium">
-                      {b.sort_order}
-                    </td>
-
-                    <td className="text-center">
-                      <StatusBadge
-                        status={b.is_active ? 'Aktif' : 'Nonaktif'}
-                      />
-                    </td>
-
-                    <td className="text-center">
-                      <ActionButtons
-                        onEdit={() => openEdit(b)}
-                        onDelete={() => handleDelete(b.id)}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* ================= MOBILE CARD ================= */}
-          <div className="md:hidden space-y-4">
-            {banners.map((b) => (
-              <div
-                key={b.id}
-                className="border border-purple-700 rounded-xl p-4 bg-purple-900/10"
-              >
-                <img
-                  src={getBannerImageUrl(b.image_path)}
-                  className="w-full h-32 object-cover rounded-lg mb-3"
+          {/* ================= SKELETON ================= */}
+          {loading && (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-16 rounded-lg bg-purple-900/20 animate-pulse"
                 />
+              ))}
+            </div>
+          )}
 
-                <div className="flex justify-between text-sm">
-                  <span>Urutan:</span>
-                  <span className="font-semibold">{b.sort_order}</span>
-                </div>
+          {/* ================= EMPTY STATE ================= */}
+          {!loading && banners.length === 0 && (
+            <div className="text-center py-10 text-gray-400">
+              <p className="text-lg">Belum ada banner</p>
+              <p className="text-sm">Klik tombol tambah banner</p>
+            </div>
+          )}
 
-                <div className="flex justify-between text-sm mt-1">
-                  <span>Status:</span>
-                  <StatusBadge
-                    status={b.is_active ? 'Aktif' : 'Nonaktif'}
-                  />
-                </div>
+          {/* ================= TABLE ================= */}
+          {!loading && banners.length > 0 && (
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b border-purple-700 text-gray-300">
+                  <tr>
+                    <th className="py-3 text-center">Preview</th>
+                    <th className="text-center">Urutan</th>
+                    <th className="text-center">Status</th>
+                    <th className="text-center">Aksi</th>
+                  </tr>
+                </thead>
 
-                <div className="flex gap-2 mt-3">
-                  <button
-                    onClick={() => openEdit(b)}
-                    className="flex-1 bg-yellow-400 text-black py-2 rounded-lg"
-                  >
-                    Edit
-                  </button>
+                <tbody>
+                  {banners.map((b) => (
+                    <tr
+                      key={b.id}
+                      draggable
+                      onDragStart={() => handleDragStart(b)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => handleDrop(b)}
+                      className="border-b border-purple-800/40 hover:bg-purple-700/10"
+                    >
+                      <td className="py-3">
+                        <img
+                          src={getBannerImageUrl(b.image_path)}
+                          onClick={() =>
+                            openPreview(getBannerImageUrl(b.image_path))
+                          }
+                          className="h-14 mx-auto rounded-lg cursor-zoom-in"
+                        />
+                      </td>
 
-                  <button
-                    onClick={() => handleDelete(b.id)}
-                    className="flex-1 bg-red-600 py-2 rounded-lg"
-                  >
-                    Hapus
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+                      <td className="text-center">{b.sort_order}</td>
+
+                      <td className="text-center">
+                        <button
+                          onClick={() => toggleActive(b)}
+                          className="hover:scale-105 transition"
+                        >
+                          <StatusBadge
+                            status={b.is_active ? 'Aktif' : 'Nonaktif'}
+                          />
+                        </button>
+                      </td>
+
+                      <td className="text-center">
+                        <ActionButtons
+                          onEdit={() => openEdit(b)}
+                          onDelete={() => handleDelete(b.id)}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </SectionCard>
 
-      {/* ================= MODAL ================= */}
+      {/* ================= FORM MODAL ================= */}
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         title={editing ? 'Edit Banner' : 'Tambah Banner'}
       >
         <div className="space-y-4">
-          {/* IMAGE */}
-          <div>
-            <label className="text-sm text-gray-400">Gambar Banner</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleImageUpload(e.target.files[0])}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => handleImageUpload(e.target.files[0])}
+          />
+
+          {form.image_url && (
+            <img
+              src={form.image_url}
+              className="rounded-xl max-h-40 mx-auto"
             />
+          )}
 
-            {uploading && (
-              <p className="text-sm text-purple-300">Uploading...</p>
-            )}
+          <input
+            type="number"
+            value={form.sort_order}
+            onChange={(e) =>
+              setForm({ ...form, sort_order: Number(e.target.value) })
+            }
+            className="input"
+          />
 
-            {form.image_url && (
-              <img
-                src={form.image_url}
-                className="mt-3 rounded-xl max-h-40"
-              />
-            )}
-          </div>
-
-          {/* SORT ORDER */}
-          <div>
-            <label className="text-sm text-purple-300 mb-1 block">
-              Urutan ke
-            </label>
-
-            <input
-              type="number"
-              className="input"
-              placeholder="Masukkan urutan tampil"
-              value={form.sort_order}
-              onChange={(e) =>
-                setForm({ ...form, sort_order: Number(e.target.value) })
-              }
-            />
-          </div>
-
-          {/* STATUS */}
-          <label className="flex gap-2 items-center">
+          <label className="flex gap-2">
             <input
               type="checkbox"
               checked={form.is_active}
@@ -386,11 +402,22 @@ export default function BannerSection() {
           <button
             onClick={handleSubmit}
             className="bg-green-500 text-black px-4 py-2 rounded-lg w-full"
-            disabled={uploading}
           >
             Simpan
           </button>
         </div>
+      </Modal>
+
+      {/* ================= PREVIEW MODAL ================= */}
+      <Modal
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        title="Preview Banner"
+      >
+        <img
+          src={previewImage}
+          className="rounded-xl max-h-[70vh] mx-auto"
+        />
       </Modal>
     </>
   )
