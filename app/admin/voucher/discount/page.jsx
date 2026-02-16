@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import ConfirmDeleteModal from '../../../components/admin/ConfirmDeleteModal'
 import { motion } from 'framer-motion'
-import VoucherTabs from '../components/VoucherTabs'
+import VoucherTabs from '../../components/VoucherTabs'
 
 export default function DiscountPage() {
   const discounts = [
