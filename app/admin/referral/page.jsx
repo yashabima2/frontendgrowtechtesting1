@@ -39,10 +39,11 @@ export default function ReferralSettingsPage() {
     setTimeout(() => setToast(null), 3000)
   }
 
-  const formatRupiah = (value) => {
-    const number = value.replace(/\D/g, '')
+  const formatRupiah = (value = '') => {
+    const number = String(value).replace(/\D/g, '')
     return new Intl.NumberFormat('id-ID').format(number)
   }
+
 
   const unformatRupiah = (value) => {
     return value.replace(/\./g, '')
