@@ -33,7 +33,7 @@ export default function AddSaldoModal({ open, onClose, user }) {
       </div>
 
       <div className="flex justify-end gap-3 mt-6">
-        <button onClick={onClose} className="bg-white px-4 py-1 rounded">
+        <button onClick={onClose} className="bg-white px-4 py-1 rounded text-black">
           Batal
         </button>
         <button className="bg-purple-600 text-white px-4 py-1 rounded">
