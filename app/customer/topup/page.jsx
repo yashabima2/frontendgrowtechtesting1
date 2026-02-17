@@ -155,6 +155,12 @@ export default function TopUpPage() {
   // const invoiceId = `${paymentMethod.prefix}-20241220-001`
 
   return (
+    <>
+    <Script
+      src="https://app.sandbox.midtrans.com/snap/snap.js"
+      data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
+      strategy="afterInteractive"
+    />
     <section className="max-w-7xl mx-auto px-8 py-10 text-white">
 
       <h1 className="text-3xl font-bold mb-10">
@@ -357,6 +363,7 @@ export default function TopUpPage() {
         </Modal>
       )}
     </section>
+    </>
   )
   
 }
@@ -401,9 +408,3 @@ function Row({ label, value }) {
     </div>
   )
 }
-
-<Script
-  src="https://app.sandbox.midtrans.com/snap/snap.js"
-  data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
-  strategy="afterInteractive"
-/>
