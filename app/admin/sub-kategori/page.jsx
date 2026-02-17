@@ -88,13 +88,10 @@ export default function SubKategoriPage() {
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const [subRes, catRes] = await Promise.all([
+      const [subJson, catJson] = await Promise.all([
         authFetch('/api/v1/admin/subcategories'),
         authFetch('/api/v1/admin/categories'),
       ])
-
-      const subJson = await safeJson(subRes)
-      const catJson = await safeJson(catRes)
 
       setItems(subJson.data || [])
       setCategories(catJson.data || [])
@@ -106,6 +103,7 @@ export default function SubKategoriPage() {
       setLoading(false)
     }
   }
+
 
   useEffect(() => {
     fetchAll()
@@ -247,17 +245,16 @@ export default function SubKategoriPage() {
 
       console.log('PAYLOAD:', payload)
 
-      const res = await authFetch(endpoint, {
+      const json = await authFetch(endpoint, {
         method,
         body: JSON.stringify(payload),
       })
 
-      const json = await safeJson(res) 
-
-      if (!res.ok || !json?.success) {
+      if (!json?.success) {
         console.log('SAVE ERROR:', json)
         throw new Error(json?.error?.message || 'Gagal menyimpan')
       }
+
 
       await fetchAll()
       closeModal()
@@ -329,18 +326,6 @@ export default function SubKategoriPage() {
     setSelected(null)
     setMode('create')
   }
-
-  const safeJson = async (res) => {
-    const type = res.headers.get('content-type')
-
-    if (type && type.includes('application/json')) {
-      return res.json()
-    }
-
-    const text = await res.text()
-    throw new Error('Response bukan JSON:\n' + text.slice(0, 200))
-  }
-
 
   return (
     <div className="space-y-6">
