@@ -361,7 +361,7 @@ export default function SubKategoriPage() {
               {items.map((item) => (
                 <tr key={item.id} className="border-b border-white/5 text-center">
                   <td>{item.id}</td>
-                  <td>
+                  <td className="items-center justify-center flex">
                     {item.image_url ? (
                       <NextImage src={item.image_url} width={40} height={40} alt="" />
                     ) : (
