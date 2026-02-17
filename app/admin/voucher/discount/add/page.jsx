@@ -54,7 +54,7 @@ export default function AddDiscountPage() {
       )
   }, [])
 
-  /* ================= TARGET FILTER ================= */
+  /* ================= FILTER ================= */
   const filteredSubcategories = useMemo(() => {
     return subcategories.filter(s =>
       s.name.toLowerCase().includes(subcategorySearch.toLowerCase())
@@ -84,7 +84,7 @@ export default function AddDiscountPage() {
     })
   }, [form.starts_at, form.ends_at, existingDiscounts])
 
-  /* ================= TARGET HANDLER ================= */
+  /* ================= TARGET ================= */
   const addTarget = (type, id) => {
     if (!id) return
 
@@ -108,15 +108,12 @@ export default function AddDiscountPage() {
     }))
   }
 
-  /* ================= FORMAT RUPIAH ================= */
-  const formatRupiah = (value) => {
-    if (!value) return ''
-    return new Intl.NumberFormat('id-ID').format(value)
-  }
+  /* ================= RUPIAH ================= */
+  const formatRupiah = value =>
+    value ? new Intl.NumberFormat('id-ID').format(value) : ''
 
-  const parseRupiah = (value) => {
-    return value.replace(/\./g, '')
-  }
+  const parseRupiah = value =>
+    value.replace(/\./g, '')
 
   /* ================= SUBMIT ================= */
   const handleSubmit = async () => {
@@ -148,49 +145,36 @@ export default function AddDiscountPage() {
   }
 
   return (
-    <div className="p-10 max-w-5xl mx-auto text-white">
-      <h1 className="text-4xl font-bold mb-10">Tambah Discount</h1>
+    <div className="p-10 max-w-5xl mx-auto text-white space-y-6">
 
-      <div className="grid grid-cols-2 gap-6">
+      <h1 className="text-4xl font-bold">Tambah Discount</h1>
 
-        <Input
-          label="Nama Discount *"
-          onChange={v => setForm({ ...form, name: v })}
-        />
+      {/* BASIC INFO */}
+      <Section title="Informasi Dasar">
+        <Input label="Nama Discount *"
+          onChange={v => setForm({ ...form, name: v })} />
 
-        <Input
-          label="Discount Value *"
-          type="number"
+        <Input label="Discount Value *" type="number"
           onChange={v =>
-            setForm({ ...form, discount_value: Number(v) })
-          }
-        />
+            setForm({ ...form, discount_value: Number(v) })} />
 
-        <Select
-          label="Discount Type *"
+        <Select label="Discount Type *"
           options={['percent', 'amount']}
           onChange={v =>
-            setForm({ ...form, discount_type: v })
-          }
-        />
+            setForm({ ...form, discount_type: v })} />
 
-        <Input
-          label="Priority *"
-          type="number"
+        <Input label="Priority *" type="number"
           onChange={v =>
-            setForm({ ...form, priority: Number(v) })
-          }
-        />
+            setForm({ ...form, priority: Number(v) })} />
 
-        <Select
-          label="Stack Policy *"
+        <Select label="Stack Policy *"
           options={['stackable', 'exclusive']}
           onChange={v =>
-            setForm({ ...form, stack_policy: v })
-          }
-        />
+            setForm({ ...form, stack_policy: v })} />
+      </Section>
 
-        {/* Currency Formatter */}
+      {/* RULES */}
+      <Section title="Aturan Discount">
         <Input
           label="Min Order Amount (Rp)"
           value={formatRupiah(form.min_order_amount)}
@@ -198,8 +182,7 @@ export default function AddDiscountPage() {
             setForm({
               ...form,
               min_order_amount: parseRupiah(v),
-            })
-          }
+            })}
         />
 
         <Input
@@ -209,104 +192,63 @@ export default function AddDiscountPage() {
             setForm({
               ...form,
               max_discount_amount: parseRupiah(v),
-            })
-          }
+            })}
         />
 
-        <Input
-          label="Usage Limit Total"
+        <Input label="Usage Limit Total"
           type="number"
           onChange={v =>
-            setForm({ ...form, usage_limit_total: v })
-          }
+            setForm({ ...form, usage_limit_total: v })}
         />
 
-        <Input
-          label="Usage Limit Per User"
+        <Input label="Usage Limit Per User"
           type="number"
           onChange={v =>
-            setForm({ ...form, usage_limit_per_user: v })
-          }
+            setForm({ ...form, usage_limit_per_user: v })}
+        />
+      </Section>
+
+      {/* DATE RANGE */}
+      <Section title="Jadwal Aktif">
+        <Input label="Starts At *"
+          type="datetime-local"
+          onChange={v =>
+            setForm({ ...form, starts_at: v })}
         />
 
-        {/* Date Range Visual */}
-        <div className="col-span-2 grid grid-cols-2 gap-4 bg-purple-900/10 p-4 rounded-xl">
-          <Input
-            label="Starts At *"
-            type="datetime-local"
-            onChange={v =>
-              setForm({ ...form, starts_at: v })
-            }
-          />
+        <Input label="Ends At *"
+          type="datetime-local"
+          onChange={v =>
+            setForm({ ...form, ends_at: v })}
+        />
 
-          <Input
-            label="Ends At *"
-            type="datetime-local"
-            onChange={v =>
-              setForm({ ...form, ends_at: v })
-            }
-          />
-        </div>
-
-        {/* Conflict Warning */}
         {hasConflict && (
           <div className="col-span-2 bg-red-900/20 border border-red-600/40 text-red-400 px-4 py-3 rounded-xl">
-            ⚠ Jadwal discount bertabrakan dengan campaign lain
+            ⚠ Jadwal bertabrakan dengan discount lain
           </div>
         )}
+      </Section>
 
-        {/* TARGET SEARCH */}
-        <div>
-          <label className="text-sm text-gray-400">
-            Cari Subcategory
-          </label>
-          <input
-            className="input w-full"
-            placeholder="Search..."
-            onChange={e => setSubcategorySearch(e.target.value)}
-          />
+      {/* TARGETS */}
+      <Section title="Target Discount">
+        <SearchableDropdown
+          label="Target Subcategory"
+          placeholder="Cari subcategory..."
+          search={subcategorySearch}
+          setSearch={setSubcategorySearch}
+          items={filteredSubcategories}
+          onSelect={id => addTarget('subcategory', id)}
+        />
 
-          <select
-            className="input w-full mt-2"
-            onChange={e =>
-              addTarget('subcategory', e.target.value)
-            }
-          >
-            <option value="">Pilih</option>
-            {filteredSubcategories.map(s => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SearchableDropdown
+          label="Target Product"
+          placeholder="Cari product..."
+          search={productSearch}
+          setSearch={setProductSearch}
+          items={filteredProducts}
+          onSelect={id => addTarget('product', id)}
+        />
 
-        <div>
-          <label className="text-sm text-gray-400">
-            Cari Product
-          </label>
-          <input
-            className="input w-full"
-            placeholder="Search..."
-            onChange={e => setProductSearch(e.target.value)}
-          />
-
-          <select
-            className="input w-full mt-2"
-            onChange={e =>
-              addTarget('product', e.target.value)
-            }
-          >
-            <option value="">Pilih</option>
-            {filteredProducts.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* TARGET LIST */}
         <div className="col-span-2">
           <p className="text-sm text-purple-300 mb-2">
             Targets Dipilih
@@ -324,38 +266,51 @@ export default function AddDiscountPage() {
               className="flex justify-between bg-purple-900/20 px-3 py-2 rounded-lg mb-2"
             >
               <span>{t.type} #{t.id}</span>
-              <button
-                onClick={() => removeTarget(t.type, t.id)}
-              >
+              <button onClick={() => removeTarget(t.type, t.id)}>
                 ❌
               </button>
             </div>
           ))}
         </div>
+      </Section>
 
-        <label className="col-span-2 flex gap-2">
+      {/* ENABLE */}
+      <div className="border border-purple-700/40 rounded-xl p-4">
+        <label className="flex gap-2">
           <input
             type="checkbox"
             checked={form.enabled}
             onChange={e =>
-              setForm({ ...form, enabled: e.target.checked })
-            }
+              setForm({ ...form, enabled: e.target.checked })}
           />
           Enabled
         </label>
-
-        <button
-          onClick={handleSubmit}
-          className="btn-primary col-span-2"
-        >
-          Simpan Discount
-        </button>
       </div>
+
+      <button
+        onClick={handleSubmit}
+        className="btn-primary w-full"
+      >
+        Simpan Discount
+      </button>
     </div>
   )
 }
 
-/* ================= COMPONENTS ================= */
+/* ================= UI COMPONENTS ================= */
+
+function Section({ title, children }) {
+  return (
+    <div className="border border-purple-700/40 rounded-2xl p-6 bg-black/40">
+      <h2 className="text-lg font-semibold mb-4 text-purple-300">
+        {title}
+      </h2>
+      <div className="grid grid-cols-2 gap-4">
+        {children}
+      </div>
+    </div>
+  )
+}
 
 function Input({ label, ...props }) {
   return (
@@ -380,11 +335,51 @@ function Select({ label, options, onChange }) {
       >
         <option value="">Pilih</option>
         {options.map(o => (
-          <option key={o} value={o}>
-            {o}
-          </option>
+          <option key={o}>{o}</option>
         ))}
       </select>
+    </div>
+  )
+}
+
+/* ================= SEARCHABLE DROPDOWN ================= */
+
+function SearchableDropdown({
+  label,
+  placeholder,
+  search,
+  setSearch,
+  items,
+  onSelect,
+}) {
+  return (
+    <div>
+      <label className="text-sm text-gray-400">{label}</label>
+
+      <input
+        className="input w-full mb-2"
+        placeholder={placeholder}
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+      />
+
+      <div className="border border-purple-700/40 rounded-lg max-h-40 overflow-y-auto bg-purple-900/10">
+        {items.length === 0 && (
+          <p className="text-xs text-gray-500 p-2">
+            Tidak ada data
+          </p>
+        )}
+
+        {items.map(item => (
+          <div
+            key={item.id}
+            onClick={() => onSelect(item.id)}
+            className="px-3 py-2 hover:bg-purple-700/20 cursor-pointer text-sm"
+          >
+            {item.name}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
