@@ -28,9 +28,18 @@ export default function VoucherPage() {
       })
 
       const json = await res.json()
-      const list = json.data || []
+
+      console.log('VOUCHER RESPONSE:', json) // 🔍 debug penting
+
+      const list =
+        Array.isArray(json.data)
+          ? json.data
+          : Array.isArray(json.data?.data)
+            ? json.data.data
+            : []
 
       setVouchers(list)
+
     } catch (err) {
       console.error(err)
     } finally {
@@ -43,10 +52,13 @@ export default function VoucherPage() {
   }, [])
 
   const filtered = useMemo(() => {
+    if (!Array.isArray(vouchers)) return []
+
     return vouchers.filter(v =>
       v.code?.toLowerCase().includes(search.toLowerCase())
     )
   }, [vouchers, search])
+
 
   const handleDelete = async (id) => {
     if (!confirm('Yakin hapus voucher ini?')) return
