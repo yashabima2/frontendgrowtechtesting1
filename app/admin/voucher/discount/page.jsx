@@ -364,7 +364,7 @@ function SkeletonRows() {
 
 function TypeBadge({ type }) {
   const map = {
-    fixed: 'bg-blue-600/20 text-blue-400 border-blue-600/40',
+    rupiah: 'bg-blue-600/20 text-blue-400 border-blue-600/40',
     percent: 'bg-purple-600/20 text-purple-400 border-purple-600/40',
   }
 
