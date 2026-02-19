@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 export default function ProductCard({ subcategory }) {
   const router = useRouter();
 
-  // ✅ Guard wajib (penting untuk Next build)
   if (!subcategory) return null;
 
   const handleViewProducts = () => {
