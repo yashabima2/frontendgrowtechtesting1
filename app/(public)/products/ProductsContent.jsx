@@ -114,10 +114,6 @@ export default function ProductsContent() {
   );
 }
 
----
-
-# ✅ Skeleton Component
-
 function SkeletonCard() {
   return (
     <div className="rounded-2xl p-5 bg-gradient-to-b from-zinc-900 to-black border border-zinc-800 animate-pulse">
@@ -129,10 +125,6 @@ function SkeletonCard() {
     </div>
   );
 }
-
----
-
-# ✅ Empty State
 
 function EmptyState() {
   return (
