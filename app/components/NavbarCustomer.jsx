@@ -55,13 +55,34 @@ export default function NavbarCustomer() {
 
   const fetchCart = async () => {
     try {
-      const token = localStorage.getItem("token") // atau dari cookies
+      const token = localStorage.getItem("token")
+
+      if (!token) {
+        console.warn("No token found")
+        setCartCount(0)
+        return
+      }
 
       const res = await fetch(`${API}/api/v1/cart`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
+
+      if (!res.ok) {
+        const text = await res.text()
+        console.error("Cart error:", res.status, text)
+        setCartCount(0)
+        return
+      }
+
+      const contentType = res.headers.get("content-type")
+
+      if (!contentType?.includes("application/json")) {
+        const text = await res.text()
+        console.error("Non JSON response:", text)
+        return
+      }
 
       const json = await res.json()
 
@@ -75,6 +96,7 @@ export default function NavbarCustomer() {
       setCartCount(0)
     }
   }
+
 
 
   if (loading) return null
