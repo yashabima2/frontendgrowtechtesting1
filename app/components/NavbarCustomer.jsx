@@ -46,8 +46,6 @@ export default function NavbarCustomer() {
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
 
-  if (loading) return null
-
   /* ================= FETCH CART COUNT ================= */
   useEffect(() => {
     if (!user) return
@@ -86,6 +84,8 @@ export default function NavbarCustomer() {
       setCartCount(0)
     }
   }
+
+  if (loading) return null
 
   /* ================= NAV CONFIG ================= */
   const navItems = [
