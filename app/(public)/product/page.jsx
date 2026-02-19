@@ -17,7 +17,7 @@ export default function ProductPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch(`${API}api/v1/categories`);
+      const res = await fetch(`${API}/api/v1/categories`);
       const json = await res.json();
 
       if (json.success) {
@@ -31,8 +31,8 @@ export default function ProductPage() {
   const fetchSubcategories = async (categoryId = null) => {
     try {
       const url = categoryId
-        ? `${API}api/v1/categories/${categoryId}/subcategories`
-        : `${API}api/v1/subcategories`;
+        ? `${API}/api/v1/categories/${categoryId}/subcategories`
+        : `${API}/api/v1/subcategories`;
 
       const res = await fetch(url);
       const json = await res.json();
