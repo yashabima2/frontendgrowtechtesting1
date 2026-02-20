@@ -1,9 +1,56 @@
-'use client'
+"use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
 export default function StepTwo() {
+  const [checkout, setCheckout] = useState(null);
+  const [qty, setQty] = useState(1);
+  const [voucher, setVoucher] = useState("");
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem("checkout");
+
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      setCheckout(parsed);
+
+      const firstItem = parsed?.items?.[0];
+      setQty(firstItem?.qty || 1);
+    }
+  }, []);
+
+  if (!checkout) {
+    return (
+      <section className="max-w-5xl mx-auto px-6 py-12 text-white">
+        <p className="text-gray-400">Memuat data checkout...</p>
+      </section>
+    );
+  }
+
+  const item = checkout.items?.[0];
+  const product = item?.product;
+
+  const unitPrice = item?.unit_price || 0;
+  const stockAvailable = item?.stock_available ?? 0;
+
+  // ================= CALCULATION =================
+  const subtotal = unitPrice * qty;
+  const taxPercent = checkout?.tax_percent ?? 0;
+  const taxAmount = Math.round(subtotal * (taxPercent / 100));
+  const total = subtotal + taxAmount;
+
+  const handleMinus = () => {
+    if (qty <= 1) return;
+    setQty(qty - 1);
+  };
+
+  const handlePlus = () => {
+    if (qty >= stockAvailable) return;
+    setQty(qty + 1);
+  };
+
   return (
     <section className="max-w-5xl mx-auto px-6 py-12 text-white">
 
@@ -22,48 +69,65 @@ export default function StepTwo() {
         <div className="flex items-center gap-4">
           <div className="relative h-16 w-16 overflow-hidden rounded-xl border border-purple-700">
             <Image
-              src="/product/redfinger.png"
+              src={
+                product?.subcategory?.image_url ||
+                "/placeholder.png"
+              }
               fill
-              alt="Red Finger"
+              alt={product?.name}
               className="object-cover"
             />
           </div>
 
           <div className="flex-1">
             <p className="font-medium">
-              VIP 7D Android 15/12/10
+              {product?.name}
             </p>
             <p className="text-sm text-gray-400">
-              Rp 19.000 / unit
+              Rp {unitPrice.toLocaleString()} / unit
             </p>
           </div>
 
           <div className="text-right font-semibold">
-            Total : <span className="text-purple-400">Rp 48.000</span>
+            Total :{" "}
+            <span className="text-purple-400">
+              Rp {(unitPrice * qty).toLocaleString()}
+            </span>
           </div>
         </div>
 
-        {/* JUMLAH */}
+        {/* ================= JUMLAH ================= */}
         <div className="mt-6 flex items-center justify-between">
           <span className="text-sm text-gray-400">
             Jumlah Pembelian
           </span>
 
           <div className="flex items-center gap-3">
-            <button className="h-9 w-9 rounded-full bg-gray-200 text-black font-bold">
+            <button
+              onClick={handleMinus}
+              className="h-9 w-9 rounded-full bg-gray-200 text-black font-bold"
+            >
               −
             </button>
 
             <div className="flex items-center gap-1 rounded-full bg-gray-200 px-4 py-1 text-black">
-              <span className="font-semibold">2</span>
+              <span className="font-semibold">{qty}</span>
               <span className="text-xs">↕</span>
             </div>
 
-            <button className="h-9 w-9 rounded-full bg-gray-200 text-black font-bold">
+            <button
+              onClick={handlePlus}
+              className="h-9 w-9 rounded-full bg-gray-200 text-black font-bold disabled:opacity-40"
+              disabled={qty >= stockAvailable}
+            >
               +
             </button>
           </div>
         </div>
+
+        <p className="mt-2 text-xs text-gray-500">
+          Stock tersedia: {stockAvailable}
+        </p>
       </div>
 
       {/* ================= VOUCHER ================= */}
@@ -78,6 +142,8 @@ export default function StepTwo() {
         </div>
 
         <input
+          value={voucher}
+          onChange={(e) => setVoucher(e.target.value)}
           placeholder="Contoh: PROMO5K"
           className="w-full rounded-lg border border-purple-800 bg-black px-4 py-3 text-sm outline-none focus:border-purple-500"
         />
@@ -94,11 +160,14 @@ export default function StepTwo() {
               Gunakan Saldo Wallet
             </p>
             <p className="text-sm text-gray-400">
-              Saldo Tersedia: Rp 245.000
+              Saldo Tersedia: Rp {(checkout?.wallet_balance ?? 0).toLocaleString()}
             </p>
           </div>
 
-          <Link href="/customer/topup" className="rounded-full bg-purple-700 px-6 py-2 text-sm font-medium hover:bg-purple-600">
+          <Link
+            href="/customer/topup"
+            className="rounded-full bg-purple-700 px-6 py-2 text-sm font-medium hover:bg-purple-600"
+          >
             Top up
           </Link>
         </div>
@@ -106,14 +175,17 @@ export default function StepTwo() {
 
       {/* ================= ACTION ================= */}
       <div className="mb-10 flex items-center gap-6">
-      <Link
-        href="/customer/category/product/detail/"
-        className="flex-1 rounded-xl border border-purple-700 py-3 text-center hover:bg-purple-900/40"
-      >
-        Kembali
-      </Link>
+        <Link
+          href="/customer/category/product/detail/cart"
+          className="flex-1 rounded-xl border border-purple-700 py-3 text-center hover:bg-purple-900/40"
+        >
+          Kembali
+        </Link>
 
-        <Link href="/customer/category/product/detail/lengkapipembelian/methodpayment" className="flex-1 rounded-xl bg-purple-700 py-3 text-center font-semibold hover:bg-purple-600">
+        <Link
+          href="/customer/category/product/detail/lengkapipembelian/methodpayment"
+          className="flex-1 rounded-xl bg-purple-700 py-3 text-center font-semibold hover:bg-purple-600"
+        >
           Lanjut Ke Pembayaran &gt;
         </Link>
       </div>
@@ -127,38 +199,32 @@ export default function StepTwo() {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span>Harga Unit</span>
-            <span>Rp 19.000</span>
+            <span>Rp {unitPrice.toLocaleString()}</span>
           </div>
 
           <div className="flex justify-between">
             <span>Jumlah</span>
-            <span>2x</span>
+            <span>{qty}x</span>
           </div>
 
           <div className="flex justify-between">
             <span>Sub Total</span>
-            <span>Rp 48.000</span>
+            <span>Rp {subtotal.toLocaleString()}</span>
           </div>
 
           <div className="flex justify-between">
             <span>Tax</span>
-            <span>10%</span>
+            <span>{taxPercent}%</span>
           </div>
 
           <div className="flex justify-between border-t border-purple-800 pt-3">
-            <span>Diskon</span>
-            <span>Rp 0</span>
-          </div>
-
-          <div className="flex justify-between text-base font-semibold">
             <span>Total</span>
             <span className="text-purple-400">
-              Rp 48.480
+              Rp {total.toLocaleString()}
             </span>
           </div>
         </div>
       </div>
-
     </section>
   );
 }
