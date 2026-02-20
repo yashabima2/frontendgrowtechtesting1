@@ -21,6 +21,7 @@ export default function CartPage() {
     fetchCart();
   }, []);
 
+  // ================= FETCH CART =================
   const fetchCart = async () => {
     try {
       const token = Cookies.get("token");
@@ -55,6 +56,50 @@ export default function CartPage() {
     }
   };
 
+  // ================= UPDATE QTY =================
+  const updateQty = async (id, qty, stock) => {
+    if (qty < 1) return;
+    if (qty > stock) return;
+
+    try {
+      const token = Cookies.get("token");
+      if (!token) return;
+
+      await fetch(`${API}/api/v1/cart/items/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ qty }),
+      });
+
+      fetchCart();
+    } catch (err) {
+      console.error("Failed update qty:", err);
+    }
+  };
+
+  // ================= REMOVE ITEM =================
+  const removeItem = async (id) => {
+    try {
+      const token = Cookies.get("token");
+      if (!token) return;
+
+      await fetch(`${API}/api/v1/cart/items/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      fetchCart();
+    } catch (err) {
+      console.error("Failed remove item:", err);
+    }
+  };
+
+  // ================= CHECKOUT =================
   const handleCheckout = async () => {
     try {
       setCheckoutLoading(true);
@@ -87,10 +132,7 @@ export default function CartPage() {
         return;
       }
 
-      // ✅ simpan data checkout ke sessionStorage
       sessionStorage.setItem("checkout", JSON.stringify(json.data));
-
-      // ✅ redirect ke StepTwo
       router.push("/customer/category/product/detail/lengkapipembelian");
     } catch (err) {
       console.error("Checkout failed:", err);
@@ -102,6 +144,7 @@ export default function CartPage() {
   const subtotal = summary?.subtotal ?? 0;
   const total = summary?.total ?? subtotal;
 
+  // ================= UNAUTHORIZED =================
   if (!loading && unauthorized) {
     return (
       <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
@@ -127,52 +170,115 @@ export default function CartPage() {
 
       <section className="max-w-7xl mx-auto px-8 grid grid-cols-1 lg:grid-cols-3 gap-10">
 
-        {/* LEFT tetap */}
+        {/* ================= LEFT ================= */}
         <div className="lg:col-span-2 space-y-6">
           {loading ? (
             <p className="text-gray-400">Loading cart...</p>
           ) : items.length === 0 ? (
             <p className="text-gray-500">Keranjang kosong</p>
           ) : (
-            items.map((item) => (
-              <div
-                key={item.id}
-                className="rounded-2xl border border-purple-700 p-6 flex items-center gap-6"
-              >
-                <div className="h-20 w-20 rounded-xl bg-blue-600 flex items-center justify-center">
-                  <Image
-                    src={item.product?.subcategory?.image_url || "/placeholder.png"}
-                    alt={item.product?.name}
-                    width={48}
-                    height={48}
-                  />
+            items.map((item) => {
+              const product = item.product;
+              const unitPrice = item.unit_price || 0;
+              const qty = item.qty || 1;
+              const stock = item.stock_available ?? 0;
+              const lineSubtotal = item.line_subtotal || 0;
+
+              return (
+                <div
+                  key={item.id}
+                  className="
+                    rounded-2xl border border-purple-700 p-6
+                    flex items-center gap-6
+                    transition-all duration-300
+                    hover:border-purple-500
+                    hover:shadow-[0_0_25px_rgba(168,85,247,0.25)]
+                  "
+                >
+                  {/* IMAGE */}
+                  <div className="h-20 w-20 rounded-xl bg-blue-600 flex items-center justify-center">
+                    <Image
+                      src={product?.subcategory?.image_url || "/placeholder.png"}
+                      alt={product?.name}
+                      width={48}
+                      height={48}
+                    />
+                  </div>
+
+                  {/* INFO */}
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg">
+                      {product?.name}
+                    </h3>
+
+                    <p className="text-sm text-gray-400">
+                      Rp {unitPrice.toLocaleString()} / item
+                    </p>
+
+                    <p className="text-sm text-gray-500">
+                      Stock Tersedia: {stock}
+                    </p>
+
+                    {/* ================= QTY CONTROL ================= */}
+                    <div className="mt-3 flex items-center gap-3">
+                      <button
+                        onClick={() => updateQty(item.id, qty - 1, stock)}
+                        disabled={qty <= 1}
+                        className="
+                          h-9 w-9 rounded-lg
+                          bg-white text-black font-bold
+                          transition hover:scale-110
+                          disabled:opacity-40 disabled:hover:scale-100
+                        "
+                      >
+                        −
+                      </button>
+
+                      <span className="min-w-[24px] text-center font-semibold">
+                        {qty}
+                      </span>
+
+                      <button
+                        onClick={() => updateQty(item.id, qty + 1, stock)}
+                        disabled={qty >= stock}
+                        className="
+                          h-9 w-9 rounded-lg
+                          bg-white text-black font-bold
+                          transition hover:scale-110
+                          disabled:opacity-40 disabled:hover:scale-100
+                        "
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* PRICE */}
+                  <div className="text-right space-y-2">
+                    <p className="text-sm text-gray-400">Harga</p>
+
+                    <p className="font-semibold">
+                      Rp {lineSubtotal.toLocaleString()}
+                    </p>
+
+                    {/* DELETE */}
+                    <button
+                      onClick={() => removeItem(item.id)}
+                      className="
+                        text-gray-400 hover:text-red-500
+                        transition hover:scale-110
+                      "
+                    >
+                      🗑
+                    </button>
+                  </div>
                 </div>
-
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg">
-                    {item.product?.name}
-                  </h3>
-
-                  <p className="text-sm text-gray-400">
-                    Rp {item.unit_price?.toLocaleString()} / item
-                  </p>
-
-                  <p className="text-sm text-gray-500">
-                    Stock Tersedia: {item.stock_available}
-                  </p>
-                </div>
-
-                <div className="text-right">
-                  <p className="font-semibold">
-                    Rp {item.line_subtotal?.toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
-        {/* SUMMARY */}
+        {/* ================= SUMMARY ================= */}
         <div className="rounded-2xl border border-purple-700 p-6 h-fit">
           <h3 className="text-xl font-semibold mb-6">Ringkasan</h3>
 
@@ -190,18 +296,27 @@ export default function CartPage() {
             </div>
           </div>
 
-          {/* ✅ BUTTON bukan Link */}
           <button
             onClick={handleCheckout}
             disabled={checkoutLoading || items.length === 0}
-            className="block w-full rounded-xl bg-purple-700 py-3 text-center font-semibold hover:bg-purple-600 transition disabled:opacity-50"
+            className="
+              block w-full rounded-xl bg-purple-700 py-3
+              text-center font-semibold
+              transition-all duration-300
+              hover:bg-purple-600 hover:shadow-lg hover:scale-[1.02]
+              disabled:opacity-50
+            "
           >
             {checkoutLoading ? "Memproses Checkout..." : "→ Lanjut Checkout"}
           </button>
 
           <Link
             href="/customer/product"
-            className="mt-3 block w-full rounded-xl bg-white py-3 text-center font-semibold text-black hover:bg-gray-200 transition"
+            className="
+              mt-3 block w-full rounded-xl bg-white py-3
+              text-center font-semibold text-black
+              transition hover:bg-gray-200 hover:scale-[1.02]
+            "
           >
             Lanjut Belanja
           </Link>
