@@ -3,12 +3,17 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import Cookies from "js-cookie";
+import { useRouter } from "next/navigation";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 export default function CartPage() {
+  const router = useRouter();
+
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [unauthorized, setUnauthorized] = useState(false);
 
   useEffect(() => {
     fetchCart();
@@ -18,9 +23,42 @@ export default function CartPage() {
     try {
       setLoading(true);
 
+      const token = Cookies.get("token");
+
+      if (!token) {
+        console.warn("No token → user not logged in");
+        setUnauthorized(true);
+        setItems([]);
+        return;
+      }
+
       const res = await fetch(`${API}/api/v1/cart`, {
-        credentials: "include", // penting kalau pakai cookie auth
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
+
+      if (res.status === 401) {
+        console.warn("Unauthorized (401)");
+        setUnauthorized(true);
+        setItems([]);
+        return;
+      }
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Cart error:", res.status, text);
+        setItems([]);
+        return;
+      }
+
+      const contentType = res.headers.get("content-type");
+
+      if (!contentType?.includes("application/json")) {
+        const text = await res.text();
+        console.error("Non JSON response:", text);
+        return;
+      }
 
       const json = await res.json();
 
@@ -35,30 +73,40 @@ export default function CartPage() {
     }
   };
 
-  // Update qty
+  // ✅ Update qty
   const updateQty = async (id, qty) => {
     if (qty < 1) return;
 
     try {
+      const token = Cookies.get("token");
+      if (!token) return;
+
       await fetch(`${API}/api/v1/cart/items/${id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ qty }),
       });
 
-      fetchCart(); // refresh cart
+      fetchCart();
     } catch (err) {
       console.error("Failed update qty:", err);
     }
   };
 
-  //  Remove item
+  // ✅ Remove item
   const removeItem = async (id) => {
     try {
+      const token = Cookies.get("token");
+      if (!token) return;
+
       await fetch(`${API}/api/v1/cart/items/${id}`, {
         method: "DELETE",
-        credentials: "include",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       fetchCart();
@@ -67,11 +115,29 @@ export default function CartPage() {
     }
   };
 
-  // Hitung subtotal
+  // ✅ Hitung subtotal
   const subtotal = items.reduce((acc, item) => {
-    const price = item.product?.price || 0; // sesuaikan field harga
+    const price = item.product?.price || 0;
     return acc + price * item.qty;
   }, 0);
+
+  // ✅ Kalau belum login
+  if (unauthorized) {
+    return (
+      <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
+        <p className="text-gray-400 mb-4">
+          Kamu harus login untuk melihat keranjang
+        </p>
+
+        <Link
+          href="/login"
+          className="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500"
+        >
+          Login Sekarang
+        </Link>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-black text-white">
@@ -81,9 +147,8 @@ export default function CartPage() {
 
       <section className="max-w-7xl mx-auto px-8 grid grid-cols-1 lg:grid-cols-3 gap-10">
         
-        {/* ================= LEFT ================= */}
+        {/* LEFT */}
         <div className="lg:col-span-2 space-y-6">
-
           {loading ? (
             <p className="text-gray-400">Loading cart...</p>
           ) : items.length === 0 ? (
@@ -164,7 +229,7 @@ export default function CartPage() {
           )}
         </div>
 
-        {/* ================= RIGHT SUMMARY ================= */}
+        {/* SUMMARY */}
         <div className="rounded-2xl border border-purple-700 p-6 h-fit">
           <h3 className="text-xl font-semibold mb-6">Ringkasan</h3>
 
