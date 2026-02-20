@@ -1,112 +1,187 @@
-'use client'
+"use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
+const API = process.env.NEXT_PUBLIC_API_URL;
+
 export default function CartPage() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCart();
+  }, []);
+
+  const fetchCart = async () => {
+    try {
+      setLoading(true);
+
+      const res = await fetch(`${API}/api/v1/cart`, {
+        credentials: "include", // penting kalau pakai cookie auth
+      });
+
+      const json = await res.json();
+
+      if (json.success) {
+        setItems(json.data.items || []);
+      }
+    } catch (err) {
+      console.error("Failed fetch cart:", err);
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update qty
+  const updateQty = async (id, qty) => {
+    if (qty < 1) return;
+
+    try {
+      await fetch(`${API}/api/v1/cart/items/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ qty }),
+      });
+
+      fetchCart(); // refresh cart
+    } catch (err) {
+      console.error("Failed update qty:", err);
+    }
+  };
+
+  //  Remove item
+  const removeItem = async (id) => {
+    try {
+      await fetch(`${API}/api/v1/cart/items/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      fetchCart();
+    } catch (err) {
+      console.error("Failed remove:", err);
+    }
+  };
+
+  // Hitung subtotal
+  const subtotal = items.reduce((acc, item) => {
+    const price = item.product?.price || 0; // sesuaikan field harga
+    return acc + price * item.qty;
+  }, 0);
+
   return (
     <main className="min-h-screen bg-black text-white">
-
-      {/* ================= TITLE ================= */}
       <div className="max-w-7xl mx-auto px-8 pt-10">
-        <h1 className="text-4xl font-bold mb-10">
-          Keranjang
-        </h1>
+        <h1 className="text-4xl font-bold mb-10">Keranjang</h1>
       </div>
 
-      {/* ================= CONTENT ================= */}
       <section className="max-w-7xl mx-auto px-8 grid grid-cols-1 lg:grid-cols-3 gap-10">
-
-        {/* ================= LEFT : CART ITEMS ================= */}
+        
+        {/* ================= LEFT ================= */}
         <div className="lg:col-span-2 space-y-6">
 
-          {[1, 2, 3].map((item) => (
-            <div
-              key={item}
-              className="rounded-2xl border border-purple-700 p-6 flex items-center gap-6"
-            >
-              {/* IMAGE */}
-              <div className="h-20 w-20 rounded-xl bg-blue-600 flex items-center justify-center">
-                <Image
-                  src="/product/redfinger.png"
-                  alt="RedFinger"
-                  width={48}
-                  height={48}
-                />
-              </div>
+          {loading ? (
+            <p className="text-gray-400">Loading cart...</p>
+          ) : items.length === 0 ? (
+            <p className="text-gray-500">Keranjang kosong</p>
+          ) : (
+            items.map((item) => {
+              const product = item.product;
+              const price = product?.price || 0;
 
-              {/* INFO */}
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg">
-                  RedFinger - 1 Bulan
-                </h3>
-                <p className="text-sm text-gray-400">
-                  Rp 50.000 / item
-                </p>
-                <p className="text-sm text-gray-500">
-                  Sisa Stock: 5
-                </p>
+              return (
+                <div
+                  key={item.id}
+                  className="rounded-2xl border border-purple-700 p-6 flex items-center gap-6"
+                >
+                  {/* IMAGE */}
+                  <div className="h-20 w-20 rounded-xl bg-blue-600 flex items-center justify-center">
+                    <Image
+                      src={product?.image_url || "/placeholder.png"}
+                      alt={product?.name}
+                      width={48}
+                      height={48}
+                    />
+                  </div>
 
-                {/* QTY */}
-                <div className="mt-3 flex items-center gap-2">
-                  <button className="h-8 w-8 rounded bg-white text-black font-bold">
-                    −
-                  </button>
-                  <span className="min-w-[32px] text-center">
-                    2
-                  </span>
-                  <button className="h-8 w-8 rounded bg-white text-black font-bold">
-                    +
-                  </button>
+                  {/* INFO */}
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg">
+                      {product?.name}
+                    </h3>
+
+                    <p className="text-sm text-gray-400">
+                      Rp {price.toLocaleString()} / item
+                    </p>
+
+                    <p className="text-sm text-gray-500">
+                      Sisa Stock: {product?.stock ?? 0}
+                    </p>
+
+                    {/* QTY */}
+                    <div className="mt-3 flex items-center gap-2">
+                      <button
+                        onClick={() => updateQty(item.id, item.qty - 1)}
+                        className="h-8 w-8 rounded bg-white text-black font-bold"
+                      >
+                        −
+                      </button>
+
+                      <span className="min-w-[32px] text-center">
+                        {item.qty}
+                      </span>
+
+                      <button
+                        onClick={() => updateQty(item.id, item.qty + 1)}
+                        className="h-8 w-8 rounded bg-white text-black font-bold"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* PRICE */}
+                  <div className="text-right space-y-2">
+                    <p className="text-sm text-gray-400">Harga</p>
+                    <p className="font-semibold">
+                      Rp {(price * item.qty).toLocaleString()}
+                    </p>
+
+                    <button
+                      onClick={() => removeItem(item.id)}
+                      className="text-gray-400 hover:text-red-500"
+                    >
+                      🗑
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-              {/* PRICE */}
-              <div className="text-right space-y-2">
-                <p className="text-sm text-gray-400">
-                  Harga
-                </p>
-                <p className="font-semibold">
-                  Rp 100.000
-                </p>
-
-                <button className="text-gray-400 hover:text-red-500">
-                  🗑
-                </button>
-              </div>
-            </div>
-          ))}
+              );
+            })
+          )}
         </div>
 
-        {/* ================= RIGHT : SUMMARY ================= */}
+        {/* ================= RIGHT SUMMARY ================= */}
         <div className="rounded-2xl border border-purple-700 p-6 h-fit">
-
-          <h3 className="text-xl font-semibold mb-6">
-            Ringkasan
-          </h3>
+          <h3 className="text-xl font-semibold mb-6">Ringkasan</h3>
 
           <div className="space-y-3 text-sm mb-6">
             <div className="flex justify-between">
               <span className="text-gray-400">Subtotal</span>
-              <span>Rp 300.000</span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-400">Diskon</span>
-              <span className="text-red-400">
-                -Rp 50.000
-              </span>
+              <span>Rp {subtotal.toLocaleString()}</span>
             </div>
 
             <div className="border-t border-purple-700 pt-4 flex justify-between text-lg font-semibold">
               <span>Total</span>
               <span className="text-purple-400">
-                Rp 250.000
+                Rp {subtotal.toLocaleString()}
               </span>
             </div>
           </div>
 
-          {/* ACTION */}
           <div className="space-y-3">
             <Link
               href="/customer/checkout/detail"
@@ -124,12 +199,6 @@ export default function CartPage() {
           </div>
         </div>
       </section>
-
-      {/* ================= FOOTER DIVIDER ================= */}
-      <div className="max-w-7xl mx-auto px-8 mt-16">
-        <div className="border-t border-purple-800" />
-      </div>
-
     </main>
   );
 }
