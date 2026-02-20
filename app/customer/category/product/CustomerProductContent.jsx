@@ -2,17 +2,20 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Cookies from "js-cookie";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 export default function CustomerProductContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const subcategoryId = searchParams.get("subcategory");
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [addingId, setAddingId] = useState(null); // 🔥 loading per item
 
   useEffect(() => {
     fetchProducts();
@@ -48,20 +51,64 @@ export default function CustomerProductContent() {
     }
   };
 
+  // ================= ADD TO CART =================
+  const addToCart = async (productId) => {
+    try {
+      const token = Cookies.get("token");
+
+      if (!token) {
+        console.warn("User belum login");
+        router.push("/login");
+        return;
+      }
+
+      setAddingId(productId);
+
+      const res = await fetch(`${API}/api/v1/cart/items`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          product_id: productId,
+          qty: 1,
+        }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Add to cart error:", res.status, text);
+        alert("Gagal menambahkan ke keranjang");
+        return;
+      }
+
+      const json = await res.json();
+
+      if (json.success) {
+        console.log("Produk masuk keranjang");
+
+        // ✨ OPTIONAL:
+        // Trigger event biar navbar update badge realtime
+        window.dispatchEvent(new Event("cart-updated"));
+      }
+    } catch (err) {
+      console.error("Add to cart failed:", err);
+    } finally {
+      setAddingId(null);
+    }
+  };
+
   const header = products?.[0];
 
   return (
     <section className="max-w-6xl mx-auto px-8 py-10 text-white">
-
-      {/* HEADER */}
+      
+      {/* ================= HEADER ================= */}
       <div className="mb-10 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-
         <div className="rounded-xl overflow-hidden border border-purple-700">
           <Image
-            src={
-              header?.subcategory?.image_url ||
-              "/placeholder.png"
-            }
+            src={header?.subcategory?.image_url || "/placeholder.png"}
             width={600}
             height={360}
             alt="Header"
@@ -86,7 +133,7 @@ export default function CustomerProductContent() {
         </div>
       </div>
 
-      {/* GRID */}
+      {/* ================= GRID ================= */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {loading ? (
           <>
@@ -98,10 +145,11 @@ export default function CustomerProductContent() {
           <EmptyState />
         ) : (
           products.map((product) => {
-            const pricing =
-              Array.isArray(product.tier_pricing)
-                ? product.tier_pricing[0]
-                : product.tier_pricing;
+            const pricing = Array.isArray(product.tier_pricing)
+              ? product.tier_pricing[0]
+              : product.tier_pricing;
+
+            const isAdding = addingId === product.id;
 
             return (
               <div
@@ -110,10 +158,7 @@ export default function CustomerProductContent() {
               >
                 <div className="h-[160px] bg-white">
                   <Image
-                    src={
-                      product?.subcategory?.image_url ||
-                      "/placeholder.png"
-                    }
+                    src={product?.subcategory?.image_url || "/placeholder.png"}
                     width={300}
                     height={200}
                     alt={product.name}
@@ -146,18 +191,20 @@ export default function CustomerProductContent() {
 
                   <div className="flex gap-2">
                     <Link
-                      href="/login"
-                      className="flex-1 text-center rounded-lg bg-purple-600 py-2 text-sm font-semibold hover:bg-purple-700"
+                      href="/customer/checkout/detail"
+                      className="flex-1 text-center rounded-lg bg-purple-600 py-2 text-sm font-semibold hover:bg-purple-700 transition"
                     >
                       Beli Sekarang
                     </Link>
 
-                    <Link
-                      href="/customer/category/product/detail/cart"
-                      className="w-10 h-10 flex items-center justify-center rounded-lg border border-purple-600 hover:bg-purple-600/20"
+                    {/* 🛒 ADD TO CART */}
+                    <button
+                      onClick={() => addToCart(product.id)}
+                      disabled={isAdding}
+                      className="w-10 h-10 flex items-center justify-center rounded-lg border border-purple-600 hover:bg-purple-600/20 transition disabled:opacity-50"
                     >
-                      🛒
-                    </Link>
+                      {isAdding ? "⏳" : "🛒"}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -165,7 +212,6 @@ export default function CustomerProductContent() {
           })
         )}
       </div>
-
     </section>
   );
 }
