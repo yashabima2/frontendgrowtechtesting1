@@ -88,7 +88,6 @@ export default function CustomerProductContent() {
       if (json.success) {
         console.log("Produk masuk keranjang");
 
-        // ✨ OPTIONAL:
         // Trigger event biar navbar update badge realtime
         window.dispatchEvent(new Event("cart-updated"));
       }
@@ -175,8 +174,21 @@ export default function CustomerProductContent() {
                     Stok Tersedia {product.stock ?? 0}
                   </p>
 
+                  {product.track_stock && product.stock <= product.stock_min_alert && (
+                    <p className="text-xs text-red-400">
+                      ⚠ Stok hampir habis
+                    </p>
+                  )}
+
                   <div className="flex items-center text-yellow-400 text-sm mb-2">
-                    ★★★★★ <span className="ml-1">(247)</span>
+                    <span className="mr-1">
+                      {"★".repeat(Math.round(product.rating || 0))}
+                      {"☆".repeat(5 - Math.round(product.rating || 0))}
+                    </span>
+
+                    <span className="text-xs text-gray-400">
+                      {product.rating?.toFixed(1) || "0.0"} ({product.rating_count || 0})
+                    </span>
                   </div>
 
                   <div className="flex items-center justify-between mb-3">
