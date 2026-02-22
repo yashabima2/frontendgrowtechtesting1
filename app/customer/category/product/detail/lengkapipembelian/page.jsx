@@ -20,17 +20,14 @@ export default function StepTwo() {
 
   const fetchCheckout = async () => {
     try {
-      const json = await authFetch("/api/v1/cart/checkout", {
-        method: "POST",
-        body: JSON.stringify({ voucher_code: null }),
-      });
+      const json = await authFetch("/api/v1/cart/checkout"); // ✅ GET
 
       if (json.success) {
         setCheckout(json.data);
         setQty(json.data.items?.[0]?.qty || 1);
       }
     } catch (err) {
-      console.warn("Checkout fetch failed:", err.message);
+      console.warn("Checkout preview failed:", err.message);
       setCheckout(null);
     } finally {
       setLoading(false);
