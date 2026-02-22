@@ -9,14 +9,17 @@ export default function StepTwo() {
   const [checkout, setCheckout] = useState(null);
   const [qty, setQty] = useState(1);
   const [voucher, setVoucher] = useState("");
+  const [walletBalance, setWalletBalance] = useState(0);
+
   const [loading, setLoading] = useState(true);
   const [applyingVoucher, setApplyingVoucher] = useState(false);
 
   useEffect(() => {
     fetchCheckout();
+    fetchWallet();
   }, []);
 
-  // ================= FETCH CHECKOUT PREVIEW (GET) =================
+  // ================= FETCH CHECKOUT =================
   const fetchCheckout = async () => {
     try {
       const json = await authFetch("/api/v1/cart/checkout");
@@ -33,10 +36,24 @@ export default function StepTwo() {
     }
   };
 
-  // ================= APPLY VOUCHER (POST PREVIEW) =================
+  // ================= FETCH WALLET =================
+  const fetchWallet = async () => {
+    try {
+      const json = await authFetch("/api/v1/wallet/summary");
+
+      if (json.success) {
+        setWalletBalance(json.data.wallet?.balance ?? 0);
+      }
+    } catch (err) {
+      console.warn("Wallet fetch failed:", err.message);
+      setWalletBalance(0);
+    }
+  };
+
+  // ================= APPLY VOUCHER =================
   const applyVoucher = async () => {
     if (!voucher.trim()) {
-      fetchCheckout(); // reset preview tanpa voucher
+      fetchCheckout();
       return;
     }
 
@@ -55,7 +72,7 @@ export default function StepTwo() {
       }
     } catch (err) {
       alert(err.message || "Voucher tidak valid");
-      fetchCheckout(); // fallback ke preview normal
+      fetchCheckout();
     } finally {
       setApplyingVoucher(false);
     }
@@ -71,8 +88,7 @@ export default function StepTwo() {
     if (newQty < 1) return;
     if (newQty > stockAvailable) return;
 
-    // optimistic UI
-    setQty(newQty);
+    setQty(newQty); // optimistic UI
 
     try {
       await authFetch(`/api/v1/cart/items/${item.id}`, {
@@ -80,7 +96,6 @@ export default function StepTwo() {
         body: JSON.stringify({ qty: newQty }),
       });
 
-      // refresh preview (respect voucher kalau ada)
       if (voucher.trim()) {
         applyVoucher();
       } else {
@@ -88,7 +103,7 @@ export default function StepTwo() {
       }
     } catch (err) {
       console.error("Update qty failed:", err.message);
-      fetchCheckout(); // rollback
+      fetchCheckout();
     }
   };
 
@@ -129,7 +144,6 @@ export default function StepTwo() {
   return (
     <section className="max-w-5xl mx-auto px-6 py-10 text-white">
 
-      {/* ================= HEADER STEP ================= */}
       <h1 className="text-3xl font-bold mb-10">
         Lengkapi Data Pembelian
       </h1>
@@ -228,13 +242,16 @@ export default function StepTwo() {
         <div>
           <p className="text-sm text-gray-300">Saldo Wallet</p>
           <p className="text-xs text-gray-500">
-            Saldo Tersedia: Rp 245.000
+            Saldo Tersedia: Rp {walletBalance.toLocaleString("id-ID")}
           </p>
         </div>
 
-        <button className="px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-600 text-sm">
+        <Link
+          href="/customer/topup"
+          className="px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-600 text-sm"
+        >
           Top Up
-        </button>
+        </Link>
       </div>
 
       {/* ================= BUTTONS ================= */}
