@@ -12,6 +12,7 @@ export default function StepTwo() {
   const [qty, setQty] = useState(1);
   const [voucher, setVoucher] = useState("");
 
+  // ================= FETCH CHECKOUT (POST ✅) =================
   useEffect(() => {
     const fetchCheckout = async () => {
       try {
@@ -19,11 +20,19 @@ export default function StepTwo() {
         if (!token) return;
 
         const res = await fetch(`${API}/api/v1/cart/checkout`, {
-          headers: { Authorization: `Bearer ${token}` },
+          method: "POST", // ✅ FIX WAJIB
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            voucher_code: null,
+          }),
         });
 
         if (!res.ok) {
-          console.error("Checkout fetch failed:", res.status);
+          const text = await res.text();
+          console.error("Checkout fetch failed:", res.status, text);
           return;
         }
 
@@ -33,7 +42,7 @@ export default function StepTwo() {
           setCheckout(json.data);
           setQty(json.data.items?.[0]?.qty || 1);
 
-          // ✅ Sync cache
+          // ✅ Cache checkout
           sessionStorage.setItem("checkout", JSON.stringify(json.data));
         }
       } catch (err) {
@@ -44,6 +53,7 @@ export default function StepTwo() {
     fetchCheckout();
   }, []);
 
+  // ================= FALLBACK SESSION =================
   useEffect(() => {
     if (checkout) return;
 
@@ -59,7 +69,7 @@ export default function StepTwo() {
     }
   }, [checkout]);
 
-
+  // ================= LOADING =================
   if (!checkout) {
     return (
       <section className="max-w-5xl mx-auto px-6 py-12 text-white">
@@ -68,10 +78,27 @@ export default function StepTwo() {
     );
   }
 
-  const item = checkout.items?.[0];
+  // ================= GUARD CHECKOUT KOSONG =================
+  if (!checkout.items?.length) {
+    return (
+      <section className="max-w-5xl mx-auto px-6 py-12 text-white text-center">
+        <p className="text-gray-400">Checkout kosong</p>
+
+        <Link
+          href="/customer/category/product/detail/cart"
+          className="mt-4 inline-block px-6 py-3 rounded-xl bg-purple-700 hover:bg-purple-600 transition"
+        >
+          Kembali ke Keranjang
+        </Link>
+      </section>
+    );
+  }
+
+  const item = checkout.items[0];
   const product = item?.product;
 
   const unitPrice = item?.unit_price ?? 0;
+
   const stockAvailable =
     item?.stock_available ??
     product?.stock ??
@@ -92,11 +119,6 @@ export default function StepTwo() {
     if (qty >= stockAvailable) return;
     setQty(qty + 1);
   };
-
-  useEffect(() => {
-    if (!checkout?.items?.length) return;
-    setQty(checkout.items[0].qty);
-  }, [checkout]);
 
   return (
     <section className="max-w-5xl mx-auto px-6 py-12 text-white">
@@ -135,7 +157,6 @@ export default function StepTwo() {
               Rp {unitPrice.toLocaleString()} / unit
             </p>
 
-            {/* ⭐ Rating dari backend */}
             <p className="text-xs text-yellow-400">
               ⭐ {product?.rating?.toFixed(1) || "0.0"} ({product?.rating_count || 0})
             </p>
@@ -158,20 +179,20 @@ export default function StepTwo() {
           <div className="flex items-center gap-3">
             <button
               onClick={handleMinus}
-              className="h-9 w-9 rounded-full bg-gray-200 text-black font-bold hover:scale-110 transition"
+              disabled={qty <= 1}
+              className="h-9 w-9 rounded-full bg-gray-200 text-black font-bold disabled:opacity-40"
             >
               −
             </button>
 
             <div className="flex items-center gap-1 rounded-full bg-gray-200 px-4 py-1 text-black">
               <span className="font-semibold">{qty}</span>
-              <span className="text-xs">↕</span>
             </div>
 
             <button
               onClick={handlePlus}
               disabled={qty >= stockAvailable}
-              className="h-9 w-9 rounded-full bg-gray-200 text-black font-bold hover:scale-110 transition disabled:opacity-40"
+              className="h-9 w-9 rounded-full bg-gray-200 text-black font-bold disabled:opacity-40"
             >
               +
             </button>
@@ -182,7 +203,6 @@ export default function StepTwo() {
           Stock tersedia: {stockAvailable}
         </p>
 
-        {/* ⚠ Stock alert */}
         {product?.track_stock && stockAvailable <= product?.stock_min_alert && (
           <p className="text-xs text-red-400 mt-1">
             ⚠ Stok hampir habis
@@ -192,14 +212,9 @@ export default function StepTwo() {
 
       {/* ================= VOUCHER ================= */}
       <div className="mb-8 rounded-2xl border border-purple-800 bg-black p-6">
-        <div className="mb-3 flex items-center gap-3">
-          <h3 className="text-lg font-semibold">
-            Kode Voucher / Promo
-          </h3>
-          <span className="rounded-full bg-white px-3 py-0.5 text-xs text-black">
-            Optional
-          </span>
-        </div>
+        <h3 className="mb-3 text-lg font-semibold">
+          Kode Voucher / Promo
+        </h3>
 
         <input
           value={voucher}
@@ -207,30 +222,6 @@ export default function StepTwo() {
           placeholder="Contoh: PROMO5K"
           className="w-full rounded-lg border border-purple-800 bg-black px-4 py-3 text-sm outline-none focus:border-purple-500"
         />
-      </div>
-
-      {/* ================= SALDO ================= */}
-      <div className="mb-10 rounded-2xl border border-purple-800 bg-black p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-semibold mb-1">
-              Saldo Wallet
-            </h3>
-            <p className="text-sm text-gray-400">
-              Gunakan Saldo Wallet
-            </p>
-            <p className="text-sm text-gray-400">
-              Saldo Tersedia: Rp {(checkout.wallet_balance || 0).toLocaleString()}
-            </p>
-          </div>
-
-          <Link
-            href="/customer/topup"
-            className="rounded-full bg-purple-700 px-6 py-2 text-sm font-medium hover:bg-purple-600 transition"
-          >
-            Top up
-          </Link>
-        </div>
       </div>
 
       {/* ================= ACTION ================= */}
@@ -244,7 +235,7 @@ export default function StepTwo() {
 
         <Link
           href="/customer/category/product/detail/lengkapipembelian/methodpayment"
-          className="flex-1 rounded-xl bg-purple-700 py-3 text-center font-semibold hover:bg-purple-600 transition hover:scale-[1.02]"
+          className="flex-1 rounded-xl bg-purple-700 py-3 text-center font-semibold hover:bg-purple-600 transition"
         >
           Lanjut Ke Pembayaran &gt;
         </Link>
