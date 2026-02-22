@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import Cookies from "js-cookie";
+
+const API = process.env.NEXT_PUBLIC_API_URL;
 
 export default function StepTwo() {
   const [checkout, setCheckout] = useState(null);
@@ -10,28 +13,52 @@ export default function StepTwo() {
   const [voucher, setVoucher] = useState("");
 
   useEffect(() => {
+    const fetchCheckout = async () => {
+      try {
+        const token = Cookies.get("token");
+        if (!token) return;
+
+        const res = await fetch(`${API}/api/v1/cart/checkout`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.ok) {
+          console.error("Checkout fetch failed:", res.status);
+          return;
+        }
+
+        const json = await res.json();
+
+        if (json.success) {
+          setCheckout(json.data);
+          setQty(json.data.items?.[0]?.qty || 1);
+
+          // ✅ Sync cache
+          sessionStorage.setItem("checkout", JSON.stringify(json.data));
+        }
+      } catch (err) {
+        console.error("Fetch checkout error:", err);
+      }
+    };
+
+    fetchCheckout();
+  }, []);
+
+  useEffect(() => {
+    if (checkout) return;
+
     const stored = sessionStorage.getItem("checkout");
     if (!stored) return;
 
     try {
       const parsed = JSON.parse(stored);
-
-      // ✅ Struktur BARU → langsung parsed.items & parsed.summary
-      const normalized = {
-        items: parsed.items || [],
-        summary: parsed.summary || {},
-        wallet_balance: parsed.wallet_balance ?? 0,
-      };
-
-      setCheckout(normalized);
-
-      const firstItem = parsed.items?.[0];
-      setQty(firstItem?.qty || 1);
-
+      setCheckout(parsed);
+      setQty(parsed.items?.[0]?.qty || 1);
     } catch (err) {
-      console.error("Failed parsing checkout:", err);
+      console.error("Session parse error:", err);
     }
-  }, []);
+  }, [checkout]);
+
 
   if (!checkout) {
     return (
@@ -45,9 +72,11 @@ export default function StepTwo() {
   const product = item?.product;
 
   const unitPrice = item?.unit_price ?? 0;
-  const stockAvailable = item?.stock_available ?? 0;
+  const stockAvailable =
+    item?.stock_available ??
+    product?.stock ??
+    999;
 
-  // ✅ Gunakan SUMMARY dari backend (NO manual calc)
   const subtotal = checkout.summary?.subtotal ?? 0;
   const discount = checkout.summary?.discount_total ?? 0;
   const taxPercent = checkout.summary?.tax_percent ?? 0;
@@ -63,6 +92,11 @@ export default function StepTwo() {
     if (qty >= stockAvailable) return;
     setQty(qty + 1);
   };
+
+  useEffect(() => {
+    if (!checkout?.items?.length) return;
+    setQty(checkout.items[0].qty);
+  }, [checkout]);
 
   return (
     <section className="max-w-5xl mx-auto px-6 py-12 text-white">
@@ -81,7 +115,11 @@ export default function StepTwo() {
         <div className="flex items-center gap-4">
           <div className="relative h-16 w-16 overflow-hidden rounded-xl border border-purple-700">
             <Image
-              src={product?.subcategory?.image_url || "/placeholder.png"}
+              src={
+                product?.subcategory?.image_url ||
+                product?.image_url ||
+                "/placeholder.png"
+              }
               fill
               alt={product?.name}
               className="object-cover"
